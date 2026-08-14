@@ -1,0 +1,340 @@
+'use client'
+
+import {
+  ArrowRight,
+  BookOpen,
+  BriefcaseBusiness,
+  Check,
+  CircleDollarSign,
+  Clock3,
+  DoorOpen,
+  ExternalLink,
+  ShieldCheck,
+  Sparkles,
+  Users,
+  WalletCards,
+} from 'lucide-react'
+import { useMemo, useState } from 'react'
+import Link from 'next/link'
+
+import {
+  calculateMemberShares,
+  deriveCapabilities,
+  MEMBER_SUBSCRIPTION_DISCOUNT_PERCENT,
+  MEMBER_SUBSCRIPTION_SHARE_PRICE_USD,
+  participationClassLabel,
+  resolveParticipationClass,
+  STANDARD_SHARE_PRICE_USD,
+  type BillingStatus,
+  type Capability,
+} from '@/lib/domain/participation'
+import {
+  mockActivity,
+  mockBillingStatuses,
+  mockPersonas,
+  type MockPersonaKey,
+} from '@/lib/mock/fixtures'
+
+import { StatusPill, type StatusTone } from './StatusPill'
+
+const capabilityCopy: Record<Capability, { description: string; label: string }> = {
+  'bounties.access': { description: 'Find scoped ways to contribute.', label: 'Bounty board' },
+  'coworking.apprentice': { description: 'Join apprentice rooms and working sessions.', label: 'Apprentice spaces' },
+  'coworking.guild': { description: 'Enter member and guild workspaces.', label: 'Guild spaces' },
+  'coworking.standard': { description: 'Work alongside the wider community.', label: 'Digital coworking' },
+  'learning.library': { description: 'Browse practical guild knowledge.', label: 'Learning library' },
+  'learning.live_programming': { description: 'Join workshops and brown bags.', label: 'Live programming' },
+  'networking.access': { description: 'Meet builders across the network.', label: 'Community network' },
+  'raids.full_priority_1': { description: 'First consideration when raid needs align.', label: 'Raid priority 1' },
+  'raids.full_priority_2_apprentice': { description: 'Apprentice consideration after members.', label: 'Raid priority 2' },
+  'shares.subscription_eligible': { description: 'Accrue shares for the monthly proposal.', label: 'Share subscription' },
+}
+
+const billingCopy: Record<BillingStatus, { detail: string; label: string; tone: StatusTone }> = {
+  active: { detail: 'Renews Sep 1, 2026', label: 'Active', tone: 'good' },
+  past_due: { detail: 'Payment needs attention', label: 'Past due', tone: 'warning' },
+  canceled: { detail: 'Paid through Aug 31, 2026', label: 'Canceled', tone: 'neutral' },
+  not_started: { detail: 'No subscription yet', label: 'Not started', tone: 'signal' },
+}
+
+type ParticipationDashboardProps = {
+  initial?: {
+    amountUSD: number
+    billingStatus: BillingStatus
+    credentials: Parameters<typeof resolveParticipationClass>[0]
+    displayName: string
+    handle: string
+    hasMembershipSnapshot: boolean
+  }
+  showPrototypeControls?: boolean
+}
+
+export function ParticipationDashboard({ initial, showPrototypeControls = false }: ParticipationDashboardProps) {
+  const [personaKey, setPersonaKey] = useState<MockPersonaKey>('member')
+  const [billingStatus, setBillingStatus] = useState<BillingStatus>(initial?.billingStatus ?? 'active')
+  const [memberAmount, setMemberAmount] = useState(initial?.amountUSD || 80)
+  const mockPersona = mockPersonas[personaKey]
+  const persona = initial
+    ? {
+        avatarInitials: initial.displayName.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase(),
+        credentials: initial.credentials,
+        handle: initial.handle,
+        name: initial.displayName,
+      }
+    : mockPersona
+  const participationClass = resolveParticipationClass(persona.credentials)
+  const capabilities = useMemo(
+    () => deriveCapabilities({ billingStatus, credentials: persona.credentials }),
+    [billingStatus, persona.credentials],
+  )
+  const isMember = participationClass === 'member'
+  const eligibleShares = isMember && billingStatus === 'active' ? calculateMemberShares(memberAmount) : 0
+  const billing = billingCopy[billingStatus]
+  const stablecoinHref = showPrototypeControls
+    ? `/payments/mock/stablecoin?amount=${isMember ? memberAmount : 20}&member=${isMember}`
+    : `/payments/wxdai?amount=${isMember ? memberAmount : 20}`
+
+  return (
+    <main>
+      {showPrototypeControls ? <section className="mock-toolbar" aria-label="Mock preview controls">
+        <div>
+          <span className="eyebrow">Prototype controls</span>
+          <p>Preview trusted identity and provider-neutral payment states.</p>
+        </div>
+        <div className="control-group">
+          <label htmlFor="mock-persona">Persona</label>
+          <select
+            id="mock-persona"
+            onChange={(event) => setPersonaKey(event.target.value as MockPersonaKey)}
+            value={personaKey}
+          >
+            <option value="member">RaidGuild member</option>
+            <option value="graduate">Cohort graduate</option>
+            <option value="participant">Cohort participant</option>
+          </select>
+        </div>
+        <div className="control-group">
+          <label>Payment rail</label>
+          <span className="control-value">wxDAI · card coming soon</span>
+        </div>
+        <div className="control-group">
+          <label htmlFor="mock-billing">Billing</label>
+          <select
+            id="mock-billing"
+            onChange={(event) => setBillingStatus(event.target.value as BillingStatus)}
+            value={billingStatus}
+          >
+            {mockBillingStatuses.map((status) => (
+              <option key={status} value={status}>{billingCopy[status].label}</option>
+            ))}
+          </select>
+        </div>
+      </section> : null}
+
+      <section className="hero-section">
+        <div className="hero-copy">
+          <span className="eyebrow">Your participation</span>
+          <h1>Welcome back, <em>{persona.name.split(' ')[0]}.</em></h1>
+          <p>
+            Your standing, access, subscription, and contribution signals—clear enough to act on.
+          </p>
+        </div>
+        <div className="profile-chip">
+          <span className="avatar">{persona.avatarInitials}</span>
+          <span>
+            <strong>{persona.name}</strong>
+            <small>@{persona.handle} · Portal verified</small>
+          </span>
+          <ShieldCheck aria-label="Verified through Portal" size={21} />
+        </div>
+      </section>
+
+      <section className="summary-grid">
+        <article className="summary-card summary-card--dark">
+          <span className="eyebrow eyebrow--inverse">Participation status</span>
+          <div className="summary-card__main">
+            <h2>{participationClassLabel[participationClass]}</h2>
+            <StatusPill tone={isMember ? 'good' : 'neutral'}>{isMember ? 'Onchain verified' : 'Portal verified'}</StatusPill>
+          </div>
+          <p>{isMember ? 'Membership is verified from your Portal-linked wallet at the latest Gnosis snapshot.' : initial && !initial.hasMembershipSnapshot ? 'Your wallet is awaiting the next Gnosis membership refresh.' : 'A $20 monthly subscription keeps your participation active.'}</p>
+        </article>
+
+        <article className="summary-card">
+          <span className="eyebrow">Monthly payment</span>
+          <div className="summary-card__main">
+            <h2>{isMember ? `$${memberAmount} / month` : '$20 / month'}</h2>
+            <StatusPill tone={billing.tone}>{billing.label}</StatusPill>
+          </div>
+          <p>{getBillingDetail(billingStatus)}</p>
+        </article>
+
+        <article className="summary-card summary-card--highlight">
+          <span className="eyebrow">Next action</span>
+          <h2>{getNextAction(billingStatus, isMember)}</h2>
+          <Link className="text-action" href={stablecoinHref}>
+            {getPaymentActionLabel(billingStatus)}
+            <ArrowRight aria-hidden="true" size={17} />
+          </Link>
+        </article>
+      </section>
+
+      <section className="content-grid">
+        <div className="section-card access-card">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Available now</span>
+              <h2>Your access</h2>
+            </div>
+            <StatusPill tone={capabilities.length ? 'good' : 'neutral'}>
+              {capabilities.length} capabilities
+            </StatusPill>
+          </div>
+          {capabilities.length ? (
+            <div className="capability-list">
+              {capabilities.filter((capability) => capability !== 'shares.subscription_eligible').map((capability) => (
+                <div className="capability-row" key={capability}>
+                  <span className="capability-icon">{iconForCapability(capability)}</span>
+                  <span>
+                    <strong>{capabilityCopy[capability].label}</strong>
+                    <small>{capabilityCopy[capability].description}</small>
+                  </span>
+                  <Check aria-hidden="true" size={18} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <DoorOpen aria-hidden="true" size={30} />
+              <h3>Subscription access is paused.</h3>
+              <p>Your Portal recognition remains. Restart the $20 subscription to return to the coworking space and program.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="section-card share-card">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Member program</span>
+              <h2>Share issuance</h2>
+            </div>
+            <CircleDollarSign aria-hidden="true" size={26} />
+          </div>
+          {isMember ? (
+            <>
+              <div className="share-total">
+                <span className="share-price-heading">
+                  Eligible this period
+                  <StatusPill tone="signal">{MEMBER_SUBSCRIPTION_DISCOUNT_PERCENT}% member discount</StatusPill>
+                </span>
+                <strong>{eligibleShares} RG</strong>
+                <small>
+                  {billingStatus === 'active'
+                    ? `$${memberAmount} ÷ $${MEMBER_SUBSCRIPTION_SHARE_PRICE_USD.toFixed(2)} per RG`
+                    : 'No active share subscription'}
+                </small>
+              </div>
+              <div className="price-comparison" aria-label="Share price comparison">
+                <span><small>Standard RG price</small><s>${STANDARD_SHARE_PRICE_USD.toFixed(2)}</s></span>
+                <span><small>Member subscription</small><strong>${MEMBER_SUBSCRIPTION_SHARE_PRICE_USD.toFixed(2)}</strong></span>
+              </div>
+              <label className="range-label" htmlFor="member-amount">
+                <span>Monthly amount</span>
+                <strong>${memberAmount}</strong>
+              </label>
+              <input
+                disabled={billingStatus !== 'active'}
+                id="member-amount"
+                max="200"
+                min="20"
+                onChange={(event) => setMemberAmount(Number(event.target.value))}
+                step="20"
+                type="range"
+                value={memberAmount}
+              />
+              <div className="issuance-timeline">
+                <div className="timeline-row"><Check size={16} /><span>July</span><strong>32 RG minted</strong></div>
+                <div className="timeline-row"><Clock3 size={16} /><span>August</span><strong>{eligibleShares ? `${eligibleShares} RG estimated` : 'Not accruing'}</strong></div>
+              </div>
+              <p className="fine-print">The 50% discount applies only to the member subscription program. Estimated shares are not owned until the DAO executes the monthly mint proposal.</p>
+            </>
+          ) : (
+            <div className="empty-state empty-state--compact">
+              <Sparkles aria-hidden="true" size={30} />
+              <h3>Shares are a member benefit.</h3>
+              <p>Your subscription supports active participation and does not issue RG shares.</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {showPrototypeControls ? <section className="activity-section">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">Participation signals</span>
+            <h2>Your recent activity</h2>
+          </div>
+          <span className="source-note">Portal snapshot · Aug 13</span>
+        </div>
+        <div className="metric-grid">
+          {mockActivity.map((metric) => (
+            <article className="metric-card" key={metric.label}>
+              <strong>{metric.value}</strong>
+              <span>{metric.label}</span>
+              <small>{metric.detail}</small>
+            </article>
+          ))}
+          <article className="metric-card metric-card--signal">
+            <Users aria-hidden="true" size={24} />
+            <span>Community pulse</span>
+            <small>42 people active this month</small>
+          </article>
+        </div>
+      </section> : (
+        <section className="activity-section">
+          <div className="section-heading"><div><span className="eyebrow">Participation signals</span><h2>Your recent activity</h2></div></div>
+          <div className="empty-state"><Clock3 aria-hidden="true" size={30} /><h3>Activity connections are next.</h3><p>Your billing and membership evidence are live. Portal and Discord activity metrics will appear here after their read-only connectors are enabled.</p></div>
+        </section>
+      )}
+
+      <section className="billing-callout">
+        <div>
+          <WalletCards aria-hidden="true" size={28} />
+          <span>
+            <strong>Launch rail: wxDAI directly to the RaidGuild Safe.</strong>
+            <small>
+              Monthly renewal is manual for now. Card payments and automatic renewal are coming soon.
+            </small>
+          </span>
+        </div>
+        <Link className="button button--secondary" href={stablecoinHref}>
+          {showPrototypeControls ? 'Preview transfer' : 'Pay with wxDAI'} <ExternalLink aria-hidden="true" size={16} />
+        </Link>
+      </section>
+    </main>
+  )
+}
+
+function getBillingDetail(status: BillingStatus): string {
+  if (status === 'active') return 'Paid through Aug 31, 2026 · Gnosis Chain'
+  if (status === 'past_due') return 'August wxDAI payment not confirmed'
+  if (status === 'canceled') return 'No automatic renewal · prior period complete'
+  return 'Pay wxDAI directly to the RaidGuild treasury'
+}
+
+function getPaymentActionLabel(status: BillingStatus): string {
+  return status === 'active' ? 'View payment receipt' : 'Pay with wxDAI'
+}
+
+function getNextAction(status: BillingStatus, isMember: boolean): string {
+  if (status === 'past_due') return 'Complete monthly payment'
+  if (status === 'active') return isMember ? 'Review share estimate' : 'Enter coworking'
+  return 'Pay current participation period'
+}
+
+function iconForCapability(capability: Capability) {
+  if (capability.startsWith('coworking')) return <DoorOpen aria-hidden="true" size={19} />
+  if (capability.startsWith('raids')) return <BriefcaseBusiness aria-hidden="true" size={19} />
+  if (capability.startsWith('learning')) return <BookOpen aria-hidden="true" size={19} />
+  if (capability === 'bounties.access') return <CircleDollarSign aria-hidden="true" size={19} />
+  return <Users aria-hidden="true" size={19} />
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Participation Ops"
+  short_description: "Operate entitlement syncs and module deployments"
+  default_prompt: "Use $participation-ops to inspect entitlement state and safely reconcile Portal or Discord access."

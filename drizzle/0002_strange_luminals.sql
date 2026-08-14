@@ -1,0 +1,1 @@
+ALTER TABLE "wallet_links" ADD COLUMN "verification_source" text DEFAULT 'portal_launch' NOT NULL;
