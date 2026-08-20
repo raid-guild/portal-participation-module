@@ -39,6 +39,15 @@ export async function GET(request: Request) {
       )
     }
 
+    // Never log the raw launch token, database query, or claim values.
+    console.error('Portal launch rejected.', {
+      code:
+        error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
+          ? error.code
+          : undefined,
+      name: error instanceof Error ? error.name : 'UnknownError',
+    })
+
     return authError(requestURL, isUniqueViolation(error) ? 'token_replayed' : 'invalid_token')
   }
 }
