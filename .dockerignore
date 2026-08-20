@@ -1,0 +1,9 @@
+.git
+.next
+.railway
+node_modules
+npm-debug.log*
+pnpm-debug.log*
+.env
+.env.*
+!.env.example
