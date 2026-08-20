@@ -99,13 +99,24 @@ shares directly.
 
 ## Portal, Discord, and participation metrics
 
+- [x] Add a dedicated, idempotent Prism write endpoint for immutable
+  provisional weekly Participation Steward imports.
+- [x] Match imported metric rows only through active Portal-verified Gnosis
+  wallets and surface unmatched identities for admin review.
+- [x] Show the latest provisional snapshot in the app-admin report without
+  changing subscriptions, entitlements, membership, or issuance state.
+- [x] Register a separate weekly Prism workflow/task that cannot enter the DAO
+  proposal or onchain execution flow.
+- [ ] Add an explicit admin freeze/approval action for the final cycle snapshot.
+- [ ] Show approved cycle metrics and evidence freshness in the participant
+  dashboard; never expose provisional or flagged evidence publicly.
 - [ ] Implement idempotent Portal entitlement delivery with a scoped service
   credential, durable outbox processing, retry policy, and rollback procedure.
 - [ ] Implement a Discord connector that manages only participation-owned roles.
 - [ ] Require reconciliation dry-run review before enabling either connector's
   apply mode.
-- [ ] Add read-only Portal/Discord participation metrics with clear provenance
-  and freshness timestamps.
+- [ ] Add additional read-only Portal/Discord participation evidence with clear
+  provenance and freshness timestamps.
 - [ ] Define the public/private boundary for activity, cohort, and member data.
 
 ## Operational maturity

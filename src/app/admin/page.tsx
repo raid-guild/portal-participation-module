@@ -1,10 +1,11 @@
-import { ArrowLeft, Download, FileCheck2, ShieldAlert, Users } from 'lucide-react'
+import { Activity, ArrowLeft, Download, FileCheck2, ShieldAlert, Users } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { AppShell } from '@/components/AppShell'
 import { StatusPill } from '@/components/StatusPill'
 import { getAdminParticipationReport } from '@/lib/admin/report'
+import { getLatestParticipationMetricSnapshot } from '@/lib/metrics/import'
 import { getCurrentSession } from '@/lib/portal/session'
 
 function money(amountMinorUnits: number) {
@@ -21,7 +22,11 @@ export default async function AdminPage({
   const session = await getCurrentSession()
   if (!session) redirect('/portal/auth-error?reason=login_required')
   if (!session.isAppAdmin) redirect('/?auth=forbidden')
-  const [report, query] = await Promise.all([getAdminParticipationReport(), searchParams])
+  const [report, metrics, query] = await Promise.all([
+    getAdminParticipationReport(),
+    getLatestParticipationMetricSnapshot(),
+    searchParams,
+  ])
 
   return (
     <AppShell>
@@ -43,6 +48,53 @@ export default async function AdminPage({
         </section>
 
         {query.refresh === 'succeeded' ? <div className="portal-notice">Gnosis membership snapshot refreshed.</div> : null}
+
+        <section className="section-card admin-table-card admin-metrics-card">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">Prism · Admin-only · Provisional</span>
+              <h2>Weekly participation snapshot</h2>
+            </div>
+            <Activity aria-hidden="true" size={26} />
+          </div>
+          {metrics ? (
+            <>
+              <p className="source-note">
+                {metrics.import.snapshotKey} · cycle {metrics.import.cycleKey} · generated {metrics.import.generatedAt.toLocaleString('en-US', { timeZone: 'UTC' })} UTC · {metrics.import.matchedCount}/{metrics.import.memberCount} wallets matched to Portal
+              </p>
+              <div className="table-scroll">
+                <table>
+                  <thead><tr><th>Participant</th><th>Wallet</th><th>Engagement</th><th>Stewardship</th><th>Contribution</th><th>Total</th><th>Review</th></tr></thead>
+                  <tbody>
+                    {metrics.lines.map((line) => (
+                      <tr key={line.walletAddress}>
+                        <td>{line.portalDisplayName ?? line.displayName ?? 'Unmatched participant'}</td>
+                        <td className="mono-cell">{`${line.walletAddress.slice(0, 8)}…${line.walletAddress.slice(-6)}`}</td>
+                        <td>{line.engagementScore}</td>
+                        <td>{line.stewardshipScore}</td>
+                        <td>{line.contributionScore}</td>
+                        <td><strong>{line.totalScore}</strong></td>
+                        <td>
+                          <StatusPill tone={!line.portalUserId || line.auditFlags.length ? 'warning' : 'neutral'}>
+                            {!line.portalUserId ? 'Wallet unmatched' : line.auditFlags.length ? `${line.auditFlags.length} flags` : 'Provisional'}
+                          </StatusPill>
+                        </td>
+                      </tr>
+                    ))}
+                    {!metrics.lines.length ? <tr><td colSpan={7}>Prism reported no participants for this snapshot.</td></tr> : null}
+                  </tbody>
+                </table>
+              </div>
+              <p className="fine-print">This snapshot is evidence for administrator review only. It cannot change access, subscription status, DAO membership, or issue RG shares.</p>
+            </>
+          ) : (
+            <div className="empty-state empty-state--compact">
+              <Activity aria-hidden="true" size={30} />
+              <h3>Waiting for the first Prism snapshot.</h3>
+              <p>The weekly task will publish provisional Participation Steward scores here.</p>
+            </div>
+          )}
+        </section>
 
         <section className="section-card admin-table-card">
           <div className="section-heading">

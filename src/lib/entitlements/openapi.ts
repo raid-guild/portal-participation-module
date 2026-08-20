@@ -2,10 +2,10 @@ export function createOpenApiDocument() {
   return {
     openapi: '3.1.0',
     info: {
-      title: 'RaidGuild Participation Entitlements API',
-      version: '0.1.0',
+      title: 'RaidGuild Participation Service API',
+      version: '0.2.0',
       description:
-        'Service API for reading participation entitlements and planning delivery to Portal or Discord. Apply mode is intentionally unavailable until a connector is configured.',
+        'Service API for participation entitlements, delivery planning, and provisional Prism metric imports. Metric imports cannot change access, billing, membership, or issue shares.',
     },
     servers: [{ url: '/' }],
     paths: {
@@ -143,6 +143,29 @@ export function createOpenApiDocument() {
           summary: 'Plan or apply delivery to entitlement consumers',
         },
       },
+      '/api/v1/participation/cycles/import': {
+        post: {
+          operationId: 'importProvisionalParticipationMetrics',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ParticipationMetricImport' },
+              },
+            },
+          },
+          responses: {
+            '201': { description: 'Provisional Prism snapshot stored' },
+            '200': { description: 'Identical Prism run already stored; no duplicate created' },
+            '400': { description: 'Snapshot contract or rubric score is invalid' },
+            '401': { description: 'Invalid or missing metrics write credential' },
+            '409': { description: 'Prism run ID was reused with a different artifact hash' },
+            '503': { description: 'Metrics import is not configured' },
+          },
+          security: [{ metricsWriteKey: [] }],
+          summary: 'Import an admin-only provisional weekly participation snapshot from Prism',
+        },
+      },
     },
     components: {
       securitySchemes: {
@@ -152,6 +175,12 @@ export function createOpenApiDocument() {
           name: 'rg_participation_session',
         },
         serviceKey: { type: 'http', scheme: 'bearer', bearerFormat: 'service-key' },
+        metricsWriteKey: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'metrics-write-key',
+          description: 'Dedicated Prism-to-Participation write credential.',
+        },
       },
       schemas: {
         EntitlementSnapshot: {
@@ -196,6 +225,60 @@ export function createOpenApiDocument() {
               items: { enum: ['portal', 'discord'] },
             },
             mode: { enum: ['dry_run', 'apply'], default: 'dry_run' },
+          },
+        },
+        ParticipationMetricImport: {
+          type: 'object',
+          additionalProperties: false,
+          required: [
+            'schemaVersion',
+            'snapshotKey',
+            'cycleKey',
+            'windowStartsAt',
+            'windowEndsAt',
+            'generatedAt',
+            'sourceSystem',
+            'sourceTaskKey',
+            'sourceRunId',
+            'artifactSha256',
+            'status',
+            'members',
+          ],
+          properties: {
+            schemaVersion: { const: 1 },
+            snapshotKey: { type: 'string', pattern: '^\\d{4}-W\\d{2}$' },
+            cycleKey: { type: 'string' },
+            windowStartsAt: { type: 'string', format: 'date-time' },
+            windowEndsAt: { type: 'string', format: 'date-time' },
+            generatedAt: { type: 'string', format: 'date-time' },
+            sourceSystem: { const: 'prism' },
+            sourceTaskKey: { const: 'weekly-participation-admin-snapshot' },
+            sourceRunId: { type: 'string' },
+            artifactSha256: { type: 'string', pattern: '^[a-f0-9]{64}$' },
+            status: { const: 'provisional' },
+            members: {
+              type: 'array',
+              maxItems: 500,
+              items: {
+                type: 'object',
+                additionalProperties: false,
+                required: [
+                  'walletAddress',
+                  'engagementScore',
+                  'stewardshipScore',
+                  'contributionScore',
+                ],
+                properties: {
+                  walletAddress: { type: 'string' },
+                  displayName: { type: 'string' },
+                  engagementScore: { enum: [0, 20] },
+                  stewardshipScore: { enum: [0, 60] },
+                  contributionScore: { enum: [0, 70] },
+                  evidenceRefs: { type: 'array', items: { type: 'string' } },
+                  auditFlags: { type: 'array', items: { type: 'string' } },
+                },
+              },
+            },
           },
         },
       },

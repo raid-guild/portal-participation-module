@@ -4,8 +4,10 @@ export type ServiceAuthorization =
   | { ok: true }
   | { ok: false; reason: 'not_configured' | 'unauthorized' }
 
-export function authorizeServiceRequest(headers: Headers): ServiceAuthorization {
-  const configuredKey = process.env.ENTITLEMENTS_SERVICE_KEY
+function authorizeBearerRequest(
+  headers: Headers,
+  configuredKey: string | undefined,
+): ServiceAuthorization {
   if (!configuredKey) return { ok: false, reason: 'not_configured' }
 
   const authorization = headers.get('authorization')
@@ -24,4 +26,12 @@ export function authorizeServiceRequest(headers: Headers): ServiceAuthorization 
   return timingSafeEqual(configuredBuffer, suppliedBuffer)
     ? { ok: true }
     : { ok: false, reason: 'unauthorized' }
+}
+
+export function authorizeServiceRequest(headers: Headers): ServiceAuthorization {
+  return authorizeBearerRequest(headers, process.env.ENTITLEMENTS_SERVICE_KEY)
+}
+
+export function authorizeMetricsWriteRequest(headers: Headers): ServiceAuthorization {
+  return authorizeBearerRequest(headers, process.env.PARTICIPATION_METRICS_WRITE_KEY)
 }

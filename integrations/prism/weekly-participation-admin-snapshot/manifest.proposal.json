@@ -1,0 +1,51 @@
+{
+  "key": "weekly-participation-admin-snapshot",
+  "name": "Weekly Participation Admin Snapshot",
+  "version": 1,
+  "description": "Collect current Participation Steward evidence and publish a provisional, admin-only metric snapshot to the Participation module.",
+  "entrypoint": "collect-activity",
+  "workflowPath": "workflow.md",
+  "target": {
+    "required": false
+  },
+  "agentConfig": {
+    "runtime": "codex-runtime",
+    "mode": "main-agent",
+    "identity": "prism-workflow-agent",
+    "skills": [
+      "prism-api-reader"
+    ],
+    "delegation": {
+      "allowed": false,
+      "maxAgents": 1
+    }
+  },
+  "steps": [
+    {
+      "key": "collect-activity",
+      "label": "Collect Participation Activity",
+      "type": "agent",
+      "instructionPath": "steps/collect-activity.md",
+      "next": "build-snapshot"
+    },
+    {
+      "key": "build-snapshot",
+      "label": "Build Provisional Snapshot",
+      "type": "agent",
+      "instructionPath": "steps/build-snapshot.md",
+      "next": "publish-snapshot"
+    },
+    {
+      "key": "publish-snapshot",
+      "label": "Publish Admin Snapshot",
+      "type": "agent",
+      "instructionPath": "steps/publish-snapshot.md",
+      "next": "closed"
+    },
+    {
+      "key": "closed",
+      "label": "Closed",
+      "type": "terminal"
+    }
+  ]
+}

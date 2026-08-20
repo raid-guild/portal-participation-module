@@ -30,6 +30,15 @@ replace-capabilities operations without contacting a consumer. `apply`
 currently returns `501` until authenticated Portal and Discord connectors are
 implemented.
 
+`POST /api/v1/participation/cycles/import` accepts the versioned, provisional
+weekly Participation Steward snapshot produced by Prism. It uses the separate
+server-only `PARTICIPATION_METRICS_WRITE_KEY`, retains every Prism run for
+history, joins rows to Portal users by verified Gnosis wallet, and appears only
+in the app-admin report. Reusing a Prism run ID with the same artifact hash is
+idempotent; reusing it with a different hash is rejected. This endpoint cannot
+write billing evidence, membership status, capabilities, issuance periods, or
+shares.
+
 ## Canonical DAO membership operations
 
 Member share eligibility is derived from the Portal-verified Gnosis wallet, not

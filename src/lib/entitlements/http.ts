@@ -9,14 +9,14 @@ export function authorizationErrorResponse(
     return NextResponse.json(
       {
         error: 'service_key_not_configured',
-        message: 'Entitlement service access is disabled until a service key is configured.',
+        message: 'Service access is disabled until its server credential is configured.',
       },
       { status: 503 },
     )
   }
 
   return NextResponse.json(
-    { error: 'unauthorized', message: 'A valid bearer service key is required.' },
+    { error: 'unauthorized', message: 'A valid bearer credential is required.' },
     { status: 401, headers: { 'WWW-Authenticate': 'Bearer' } },
   )
 }

@@ -12,7 +12,9 @@ Implementation and payment setup are described in the
 [Next.js Module Technical Spec](./nextjs-module-technical-spec.md) and
 [Payment Provider Integration](./payment-provider-integration.md). The
 [Entitlement Service API](./entitlement-service-api.md) defines the boundary
-for Portal, Discord, manual operators, and future agents.
+for Portal, Discord, manual operators, and future agents. The
+[Prism Participation Metrics](./prism-participation-metrics.md) runbook defines
+the weekly admin-only snapshot integration.
 Deliberately deferred production and governance work is tracked in the
 [Future Feature Checklist](./future-feature-checklist.md).
 

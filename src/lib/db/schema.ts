@@ -1,6 +1,7 @@
 import {
   bigint,
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -12,6 +13,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -184,6 +186,79 @@ export const daoMembershipSnapshots = pgTable(
     uniqueIndex('dao_membership_snapshots_run_wallet_unique').on(table.runId, table.walletLinkId),
     index('dao_membership_snapshots_run_idx').on(table.runId),
     index('dao_membership_snapshots_user_idx').on(table.userId),
+  ],
+)
+
+export const participationMetricImports = pgTable(
+  'participation_metric_imports',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    schemaVersion: integer('schema_version').notNull(),
+    snapshotKey: text('snapshot_key').notNull(),
+    cycleKey: text('cycle_key').notNull(),
+    windowStartsAt: timestamp('window_starts_at', { withTimezone: true }).notNull(),
+    windowEndsAt: timestamp('window_ends_at', { withTimezone: true }).notNull(),
+    generatedAt: timestamp('generated_at', { withTimezone: true }).notNull(),
+    sourceSystem: text('source_system').notNull(),
+    sourceTaskKey: text('source_task_key').notNull(),
+    sourceRunId: text('source_run_id').notNull(),
+    artifactSha256: text('artifact_sha256').notNull(),
+    status: text('status').notNull().default('provisional'),
+    memberCount: integer('member_count').notNull(),
+    matchedCount: integer('matched_count').notNull(),
+    unmatchedCount: integer('unmatched_count').notNull(),
+    importedAt: timestamp('imported_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('participation_metric_imports_source_run_unique').on(
+      table.sourceSystem,
+      table.sourceRunId,
+    ),
+    index('participation_metric_imports_snapshot_idx').on(
+      table.snapshotKey,
+      table.generatedAt,
+    ),
+    index('participation_metric_imports_cycle_idx').on(table.cycleKey, table.generatedAt),
+    check('participation_metric_imports_schema_check', sql`${table.schemaVersion} = 1`),
+    check('participation_metric_imports_source_check', sql`${table.sourceSystem} = 'prism'`),
+    check('participation_metric_imports_status_check', sql`${table.status} = 'provisional'`),
+    check(
+      'participation_metric_imports_counts_check',
+      sql`${table.memberCount} >= 0 and ${table.matchedCount} >= 0 and ${table.unmatchedCount} >= 0 and ${table.memberCount} = ${table.matchedCount} + ${table.unmatchedCount}`,
+    ),
+  ],
+)
+
+export const participationMetricLines = pgTable(
+  'participation_metric_lines',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    importId: uuid('import_id').notNull().references(() => participationMetricImports.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    walletAddress: text('wallet_address').notNull(),
+    displayName: text('display_name'),
+    engagementScore: integer('engagement_score').notNull(),
+    stewardshipScore: integer('stewardship_score').notNull(),
+    contributionScore: integer('contribution_score').notNull(),
+    totalScore: integer('total_score').notNull(),
+    evidenceRefs: text('evidence_refs').array().notNull().default([]),
+    auditFlags: text('audit_flags').array().notNull().default([]),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('participation_metric_lines_import_wallet_unique').on(
+      table.importId,
+      table.walletAddress,
+    ),
+    index('participation_metric_lines_user_idx').on(table.userId, table.createdAt),
+    index('participation_metric_lines_import_idx').on(table.importId),
+    check('participation_metric_lines_engagement_check', sql`${table.engagementScore} in (0, 20)`),
+    check('participation_metric_lines_stewardship_check', sql`${table.stewardshipScore} in (0, 60)`),
+    check('participation_metric_lines_contribution_check', sql`${table.contributionScore} in (0, 70)`),
+    check(
+      'participation_metric_lines_total_check',
+      sql`${table.totalScore} = ${table.engagementScore} + ${table.stewardshipScore} + ${table.contributionScore} and ${table.totalScore} between 0 and 150`,
+    ),
   ],
 )
 

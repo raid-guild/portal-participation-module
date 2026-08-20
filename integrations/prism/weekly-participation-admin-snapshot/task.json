@@ -1,0 +1,24 @@
+{
+  "key": "weekly-participation-admin-snapshot",
+  "name": "Weekly Participation Admin Snapshot",
+  "description": "Create one workflow-backed provisional Participation Steward admin snapshot per ISO week.",
+  "enabled": true,
+  "triggerType": "schedule",
+  "scheduleCron": "0 14 * * 1",
+  "timezone": "UTC",
+  "taskType": "codex-prompt",
+  "inputConfig": {
+    "mode": "scheduled"
+  },
+  "instructionConfig": {
+    "requestedSkills": [
+      "prism-scheduled-task-runner",
+      "change-request-ops"
+    ],
+    "prompt": "Use prism-scheduled-task-runner and change-request-ops. Create at most one weekly change-board request per UTC ISO week for this task.\n\nTask key: weekly-participation-admin-snapshot\nWorkflow key: weekly-participation-admin-snapshot\nCheckpoint file: /data/custom/weekly-request-checkpoints/weekly-participation-admin-snapshot.json\n\nIdempotency rules:\n1. Compute the current UTC ISO week key in YYYY-Www format.\n2. Read the checkpoint if it exists.\n3. If checkpoint.week_key matches and checkpoint.last_created_request_id is present, do not create another request. Return a skipped result with the request ID and number.\n4. Otherwise create exactly one change-board request. Update the checkpoint only after successful creation.\n\nCreate the request with workflowKey `weekly-participation-admin-snapshot`, no targetAppId, requestType `ops`, priority `normal`, status `submitted`, and source `scheduled-task`. Use title `Weekly Participation Admin Snapshot - <YYYY-Www>` and description `Collect the current Hall Monitor Participation Steward evidence, calculate the 20/60/70 provisional cycle scores, resolve members by Gnosis wallet, and publish the admin-only snapshot to Participation. This request must not create a DAO proposal, issue shares, or change entitlements.`\n\nReturn compact JSON only with created/skipped, week_key, requestNumber, id, workflowKey, and status. Do not ask follow-up questions."
+  },
+  "outputConfig": {
+    "summary": true
+  },
+  "agentConfig": {}
+}
