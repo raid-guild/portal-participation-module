@@ -1,13 +1,13 @@
 # Stripe Adapter Evaluation Notes
 
 > Deferred. RaidGuild is launching with manual wxDAI payments. Card support is
-> coming soon, remains provider-neutral, and requires entity and acceptable-use
+> a future option, remains provider-neutral, and requires entity and acceptable-use
 > approval before this evaluation proceeds. See
 > [Payment Provider Integration](./payment-provider-integration.md).
 
 ## Can we build and test before connecting the bank?
 
-Yes. The current app is a local deterministic mock and needs no Stripe account.
+Yes. The current app has a local deterministic mock and needs no Stripe account.
 A later integration step can use a Stripe sandbox/test mode with test cards,
 test subscriptions, signed test webhooks, and test clocks. A real bank account
 is only needed when RaidGuild is ready to receive live Stripe payouts.
@@ -20,7 +20,7 @@ Nothing financial is required for the current mock. Product owners should decide
 
 - the Stripe account/business that will ultimately be the merchant of record;
 - whether customers are charged in USD;
-- approved member amounts (`$20` through `$200`);
+- whether to approve member amounts (`$20` through `$200`);
 - whether amounts are fixed increments or any value in the range;
 - billing date behavior (signup anniversary or a common monthly date);
 - cancellation timing;
@@ -28,8 +28,8 @@ Nothing financial is required for the current mock. Product owners should decide
 - refund and chargeback policy; and
 - whether Stripe fees are a DAO expense or reduce share eligibility.
 
-The UI uses fixed `$20` increments and the approved member subscription price of
-$2.50 per RG—a 50% discount from the standard $5 RG price. Currency conversion
+The UI uses fixed `$20` increments and previews a proposed member issuance rate of
+$2.50 per RG—a 50% discount from the reference $5 RG price. DAO approval, currency conversion,
 and payment-processing fee treatment remain policy decisions.
 
 ## What is needed for Stripe sandbox integration
@@ -54,18 +54,13 @@ We will also need sandbox Product and recurring Price IDs. Recommended product
 catalog:
 
 ```text
-Member Share Subscription
+Optional Member Contribution (future recurring variant)
   monthly prices: $20, $40, $60, $80, $100,
                   $120, $140, $160, $180, $200
 
-Cohort Graduate Participation
-  monthly price: $20
-
-Cohort Participant Access
-  monthly price: $20
 ```
 
-The app maps an approved server-side plan key and amount to these IDs. It will
+The app would map an approved server-side member plan key and amount to these IDs. It would
 not trust a Price ID or arbitrary amount submitted by the browser.
 
 We also configure a Stripe Billing Portal sandbox so users can update payment
@@ -101,7 +96,7 @@ request body, and tolerate duplicate and out-of-order delivery.
 
 The sandbox validation suite should cover:
 
-- successful signup for all three participation classes;
+- successful member signup and rejection of cohort checkout attempts;
 - rejection when the selected plan does not match the Portal credential;
 - monthly member amount changes;
 - successful renewal;
@@ -127,7 +122,7 @@ Before switching keys from test to live:
 
 - approve customer-facing terms, privacy notice, refund policy, and statement
   descriptor;
-- approve the USD/wxDAI conversion and RG issuance policy;
+- secure DAO approval for any USD/wxDAI conversion and RG issuance policy;
 - configure tax handling with appropriate professional advice;
 - configure live Products and Prices;
 - configure and test the live Billing Portal;

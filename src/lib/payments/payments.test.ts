@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { MockPaymentAdapter } from './mock-adapter'
-import { getPaymentPlan } from './plans'
+import { getPaymentPlan, isPaymentPlanKey } from './plans'
 import {
   GNOSIS_CHAIN_ID,
   RAIDGUILD_TREASURY,
@@ -22,7 +22,7 @@ describe('payment adapter boundary', () => {
     const adapter = new MockPaymentAdapter()
     const session = await adapter.createPaymentSession({
       cancelURL: 'https://example.test/cancel',
-      planKey: 'cohort_grad_20',
+      planKey: 'member_share_20',
       portalUserID: '42',
       successURL: 'https://example.test/success',
     })
@@ -52,16 +52,20 @@ describe('payment adapter boundary', () => {
     expect(adapter.capabilities.directToTreasury).toBe(true)
   })
 
-  it('requires a payer wallet for unambiguous direct transfer matching', async () => {
+  it('rejects retired cohort plans for new sessions while keeping their historical keys typed', async () => {
     const adapter = new StablecoinDirectAdapter()
+
+    expect(isPaymentPlanKey('cohort_grad_20')).toBe(false)
+    expect(isPaymentPlanKey('cohort_participant_20')).toBe(false)
 
     await expect(
       adapter.createPaymentSession({
         cancelURL: 'https://example.test/cancel',
+        expectedWalletAddress: '0x1111111111111111111111111111111111111111',
         planKey: 'cohort_participant_20',
         portalUserID: '42',
         successURL: 'https://example.test/success',
       }),
-    ).rejects.toThrow('payer wallet')
+    ).rejects.toThrow('no longer available')
   })
 })

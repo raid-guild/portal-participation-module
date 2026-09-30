@@ -9,6 +9,7 @@ type Args = {
 export default async function MockStablecoinPage({ searchParams }: Args) {
   if (process.env.NEXT_PUBLIC_APP_MODE !== 'mock') notFound()
   const query = await searchParams
+  if (query.member !== 'true') notFound()
   const requestedAmount = Number(query.amount)
   const amount = Number.isFinite(requestedAmount)
     ? Math.min(200, Math.max(20, Math.round(requestedAmount / 20) * 20))
@@ -16,7 +17,7 @@ export default async function MockStablecoinPage({ searchParams }: Args) {
 
   return (
     <AppShell>
-      <MockStablecoinCheckout amount={amount} isMember={query.member === 'true'} />
+      <MockStablecoinCheckout amount={amount} isMember />
     </AppShell>
   )
 }

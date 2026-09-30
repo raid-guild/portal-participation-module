@@ -9,28 +9,19 @@ const memberPlans = memberAmounts.map((amount) => ({
   sharesEligible: true,
 }))
 
-export const paymentPlans: Record<PaymentPlanKey, PaymentPlan> = Object.fromEntries(
-  [
-    ...memberPlans,
-    {
-      amount: { currency: 'USD', minorUnits: 2_000 },
-      eligibleClass: 'cohort_grad',
-      key: 'cohort_grad_20',
-      sharesEligible: false,
-    },
-    {
-      amount: { currency: 'USD', minorUnits: 2_000 },
-      eligibleClass: 'cohort_participant',
-      key: 'cohort_participant_20',
-      sharesEligible: false,
-    },
-  ].map((plan) => [plan.key, plan]),
-) as Record<PaymentPlanKey, PaymentPlan>
+// Legacy cohort keys remain in PaymentPlanKey for historical payment records.
+// Only member contributions can create new payment sessions.
+export const paymentPlans: Record<MemberPaymentPlanKey, PaymentPlan> = Object.fromEntries(
+  memberPlans.map((plan) => [plan.key, plan]),
+) as Record<MemberPaymentPlanKey, PaymentPlan>
+
+export type MemberPaymentPlanKey = Exclude<PaymentPlanKey, 'cohort_grad_20' | 'cohort_participant_20'>
 
 export function getPaymentPlan(planKey: PaymentPlanKey): PaymentPlan {
+  if (!isPaymentPlanKey(planKey)) throw new Error('This payment plan is no longer available.')
   return paymentPlans[planKey]
 }
 
-export function isPaymentPlanKey(value: unknown): value is PaymentPlanKey {
+export function isPaymentPlanKey(value: unknown): value is MemberPaymentPlanKey {
   return typeof value === 'string' && Object.hasOwn(paymentPlans, value)
 }

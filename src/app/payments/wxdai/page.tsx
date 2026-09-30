@@ -12,6 +12,7 @@ export default async function WxdaiPaymentPage({ searchParams }: { searchParams:
   const state = await getParticipantDashboardState(session.id, session.credentials)
   const participationClass = resolveParticipationClass(state.credentials)
   const isMember = participationClass === 'member'
+  if (!isMember) redirect('/')
   const requested = Number((await searchParams).amount)
   const amount = isMember && Number.isFinite(requested)
     ? Math.min(200, Math.max(20, Math.round(requested / 20) * 20))

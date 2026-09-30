@@ -47,14 +47,14 @@ const capabilityCopy: Record<Capability, { description: string; label: string }>
   'networking.access': { description: 'Meet builders across the network.', label: 'Community network' },
   'raids.full_priority_1': { description: 'First consideration when raid needs align.', label: 'Raid priority 1' },
   'raids.full_priority_2_apprentice': { description: 'Apprentice consideration after members.', label: 'Raid priority 2' },
-  'shares.subscription_eligible': { description: 'Accrue shares for the monthly proposal.', label: 'Share subscription' },
+  'shares.subscription_eligible': { description: 'Eligible for review in a manual DAO proposal.', label: 'Proposed share program' },
 }
 
 const billingCopy: Record<BillingStatus, { detail: string; label: string; tone: StatusTone }> = {
-  active: { detail: 'Renews Sep 1, 2026', label: 'Active', tone: 'good' },
+  active: { detail: 'Current month confirmed', label: 'Paid', tone: 'good' },
   past_due: { detail: 'Payment needs attention', label: 'Past due', tone: 'warning' },
-  canceled: { detail: 'Paid through Aug 31, 2026', label: 'Canceled', tone: 'neutral' },
-  not_started: { detail: 'No subscription yet', label: 'Not started', tone: 'signal' },
+  canceled: { detail: 'No automatic renewal', label: 'Canceled', tone: 'neutral' },
+  not_started: { detail: 'No contribution this month', label: 'Not started', tone: 'signal' },
 }
 
 type ParticipationDashboardProps = {
@@ -91,8 +91,8 @@ export function ParticipationDashboard({ initial, showPrototypeControls = false 
   const eligibleShares = isMember && billingStatus === 'active' ? calculateMemberShares(memberAmount) : 0
   const billing = billingCopy[billingStatus]
   const stablecoinHref = showPrototypeControls
-    ? `/payments/mock/stablecoin?amount=${isMember ? memberAmount : 20}&member=${isMember}`
-    : `/payments/wxdai?amount=${isMember ? memberAmount : 20}`
+    ? `/payments/mock/stablecoin?amount=${memberAmount}&member=true`
+    : `/payments/wxdai?amount=${memberAmount}`
 
   return (
     <main>
@@ -136,7 +136,7 @@ export function ParticipationDashboard({ initial, showPrototypeControls = false 
           <span className="eyebrow">Your participation</span>
           <h1>Welcome back, <em>{persona.name.split(' ')[0]}.</em></h1>
           <p>
-            Your standing, access, subscription, and contribution signals—clear enough to act on.
+            Your standing, access, and contribution signals in one place.
           </p>
         </div>
         <div className="profile-chip">
@@ -156,25 +156,25 @@ export function ParticipationDashboard({ initial, showPrototypeControls = false 
             <h2>{participationClassLabel[participationClass]}</h2>
             <StatusPill tone={isMember ? 'good' : 'neutral'}>{isMember ? 'Onchain verified' : 'Portal verified'}</StatusPill>
           </div>
-          <p>{isMember ? 'Membership is verified from your Portal-linked wallet at the latest Gnosis snapshot.' : initial && !initial.hasMembershipSnapshot ? 'Your wallet is awaiting the next Gnosis membership refresh.' : 'A $20 monthly subscription keeps your participation active.'}</p>
+          <p>{isMember ? 'Membership is verified from your Portal-linked wallet at the latest Gnosis snapshot.' : 'Cohort participation and graduate recognition are free. Payment is not required to keep your standing.'}</p>
         </article>
 
         <article className="summary-card">
-          <span className="eyebrow">Monthly payment</span>
+          <span className="eyebrow">{isMember ? 'Optional monthly contribution' : 'Cohort participation'}</span>
           <div className="summary-card__main">
-            <h2>{isMember ? `$${memberAmount} / month` : '$20 / month'}</h2>
-            <StatusPill tone={billing.tone}>{billing.label}</StatusPill>
+            <h2>{isMember ? `$${memberAmount} / month` : 'Free'}</h2>
+            {isMember ? <StatusPill tone={billing.tone}>{billing.label}</StatusPill> : <StatusPill tone="good">No dues</StatusPill>}
           </div>
-          <p>{getBillingDetail(billingStatus)}</p>
+          <p>{isMember ? getBillingDetail(billingStatus) : 'Join the cohort path and keep your Portal recognition without a payment.'}</p>
         </article>
 
         <article className="summary-card summary-card--highlight">
           <span className="eyebrow">Next action</span>
-          <h2>{getNextAction(billingStatus, isMember)}</h2>
-          <Link className="text-action" href={stablecoinHref}>
+          <h2>{isMember ? getNextAction(billingStatus) : 'Build and share your work'}</h2>
+          {isMember && billingStatus !== 'active' ? <Link className="text-action" href={stablecoinHref}>
             {getPaymentActionLabel(billingStatus)}
             <ArrowRight aria-hidden="true" size={17} />
-          </Link>
+          </Link> : isMember ? <p>Confirmed payment awaits reconciliation and DAO proposal review.</p> : <p>Cohort activities are moving toward an async build challenge. Details will be shared when ready.</p>}
         </article>
       </section>
 
@@ -205,8 +205,8 @@ export function ParticipationDashboard({ initial, showPrototypeControls = false 
           ) : (
             <div className="empty-state">
               <DoorOpen aria-hidden="true" size={30} />
-              <h3>Subscription access is paused.</h3>
-              <p>Your Portal recognition remains. Restart the $20 subscription to return to the coworking space and program.</p>
+              <h3>Access details are being updated.</h3>
+              <p>Your Portal recognition remains available without payment.</p>
             </div>
           )}
         </div>
@@ -223,26 +223,26 @@ export function ParticipationDashboard({ initial, showPrototypeControls = false 
             <>
               <div className="share-total">
                 <span className="share-price-heading">
-                  Eligible this period
-                  <StatusPill tone="signal">{MEMBER_SUBSCRIPTION_DISCOUNT_PERCENT}% member discount</StatusPill>
+                  Estimated for review
+                  <StatusPill tone="signal">Proposed {MEMBER_SUBSCRIPTION_DISCOUNT_PERCENT}% discount</StatusPill>
                 </span>
                 <strong>{eligibleShares} RG</strong>
                 <small>
                   {billingStatus === 'active'
                     ? `$${memberAmount} ÷ $${MEMBER_SUBSCRIPTION_SHARE_PRICE_USD.toFixed(2)} per RG`
-                    : 'No active share subscription'}
+                    : 'No confirmed member contribution this month'}
                 </small>
               </div>
               <div className="price-comparison" aria-label="Share price comparison">
                 <span><small>Standard RG price</small><s>${STANDARD_SHARE_PRICE_USD.toFixed(2)}</s></span>
-                <span><small>Member subscription</small><strong>${MEMBER_SUBSCRIPTION_SHARE_PRICE_USD.toFixed(2)}</strong></span>
+                <span><small>Proposed member rate</small><strong>${MEMBER_SUBSCRIPTION_SHARE_PRICE_USD.toFixed(2)}</strong></span>
               </div>
               <label className="range-label" htmlFor="member-amount">
                 <span>Monthly amount</span>
                 <strong>${memberAmount}</strong>
               </label>
               <input
-                disabled={billingStatus !== 'active'}
+                disabled={billingStatus === 'active'}
                 id="member-amount"
                 max="200"
                 min="20"
@@ -252,16 +252,16 @@ export function ParticipationDashboard({ initial, showPrototypeControls = false 
                 value={memberAmount}
               />
               <div className="issuance-timeline">
-                <div className="timeline-row"><Check size={16} /><span>July</span><strong>32 RG minted</strong></div>
-                <div className="timeline-row"><Clock3 size={16} /><span>August</span><strong>{eligibleShares ? `${eligibleShares} RG estimated` : 'Not accruing'}</strong></div>
+                <div className="timeline-row"><Clock3 size={16} /><span>Current month</span><strong>{eligibleShares ? `${eligibleShares} RG estimated` : 'No eligible payment'}</strong></div>
+                <div className="timeline-row"><Clock3 size={16} /><span>Next step</span><strong>Manual DAO proposal review</strong></div>
               </div>
-              <p className="fine-print">The 50% discount applies only to the member subscription program. Estimated shares are not owned until the DAO executes the monthly mint proposal.</p>
+              <p className="fine-print">The discounted share program is proposed and needs DAO approval. A confirmed contribution does not issue shares. Any shares require review, a DAO proposal, approval, and onchain execution.</p>
             </>
           ) : (
             <div className="empty-state empty-state--compact">
               <Sparkles aria-hidden="true" size={30} />
-              <h3>Shares are a member benefit.</h3>
-              <p>Your subscription supports active participation and does not issue RG shares.</p>
+              <h3>Share proposals are for members.</h3>
+              <p>Cohort participation is free and does not include RG shares.</p>
             </div>
           )}
         </div>
@@ -273,7 +273,7 @@ export function ParticipationDashboard({ initial, showPrototypeControls = false 
             <span className="eyebrow">Participation signals</span>
             <h2>Your recent activity</h2>
           </div>
-          <span className="source-note">Portal snapshot · Aug 13</span>
+          <span className="source-note">Prototype activity data</span>
         </div>
         <div className="metric-grid">
           {mockActivity.map((metric) => (
@@ -296,39 +296,39 @@ export function ParticipationDashboard({ initial, showPrototypeControls = false 
         </section>
       )}
 
-      <section className="billing-callout">
+      {isMember ? <section className="billing-callout">
         <div>
           <WalletCards aria-hidden="true" size={28} />
           <span>
-            <strong>Launch rail: wxDAI directly to the RaidGuild Safe.</strong>
+            <strong>Optional member contribution: wxDAI directly to the RaidGuild Safe.</strong>
             <small>
-              Monthly renewal is manual for now. Card payments and automatic renewal are coming soon.
+              Each monthly transfer is manual. Email, personal sites, and AI assistant access are ideas under review, not active perks.
             </small>
           </span>
         </div>
-        <Link className="button button--secondary" href={stablecoinHref}>
+        {billingStatus !== 'active' ? <Link className="button button--secondary" href={stablecoinHref}>
           {showPrototypeControls ? 'Preview transfer' : 'Pay with wxDAI'} <ExternalLink aria-hidden="true" size={16} />
-        </Link>
-      </section>
+        </Link> : null}
+      </section> : null}
     </main>
   )
 }
 
 function getBillingDetail(status: BillingStatus): string {
-  if (status === 'active') return 'Paid through Aug 31, 2026 · Gnosis Chain'
-  if (status === 'past_due') return 'August wxDAI payment not confirmed'
+  if (status === 'active') return 'Current month wxDAI payment confirmed on Gnosis Chain'
+  if (status === 'past_due') return 'This month’s optional payment has not been confirmed'
   if (status === 'canceled') return 'No automatic renewal · prior period complete'
-  return 'Pay wxDAI directly to the RaidGuild treasury'
+  return 'No payment required for membership standing'
 }
 
 function getPaymentActionLabel(status: BillingStatus): string {
-  return status === 'active' ? 'View payment receipt' : 'Pay with wxDAI'
+  return status === 'past_due' ? 'Review wxDAI payment' : 'Pay with wxDAI'
 }
 
-function getNextAction(status: BillingStatus, isMember: boolean): string {
-  if (status === 'past_due') return 'Complete monthly payment'
-  if (status === 'active') return isMember ? 'Review share estimate' : 'Enter coworking'
-  return 'Pay current participation period'
+function getNextAction(status: BillingStatus): string {
+  if (status === 'past_due') return 'Review optional contribution'
+  if (status === 'active') return 'Review share estimate'
+  return 'Explore member contribution'
 }
 
 function iconForCapability(capability: Capability) {

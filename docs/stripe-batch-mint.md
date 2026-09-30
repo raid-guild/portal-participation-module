@@ -1,24 +1,24 @@
-# Offchain Subscription and Batch Share Minting
+# Proposed Manual Member Contribution and Batch Share Minting
 
 ## Summary
 
-This is the recommended first implementation. Payments are collected through a
-selected recurring payment provider, proceeds are transferred from the payout
-account to the RaidGuild treasury, and one monthly DAO proposal issues shares
-to all eligible members.
+This is a proposed SOP pending DAO approval. Members may make optional manual
+monthly wxDAI contributions directly to the RaidGuild treasury. A steward
+reconciles confirmed payments and prepares one monthly DAO proposal for
+eligible members. Cohort participants and graduates do not pay to participate.
 
 No Shaman is required. Share issuance stays behind the DAO's normal proposal,
 voting, grace-period, and execution process.
 
 ## Monthly workflow
 
-1. Collect subscriptions through the configured payment provider.
+1. Reconcile optional member wxDAI contributions sent directly to the Safe.
 2. Wait for the accounting cutoff and reconcile successful payments, refunds,
    disputes, and chargebacks.
-3. Convert and transfer the required funds from the bank to the RaidGuild Safe.
+3. Verify the funds arrived at the RaidGuild Safe.
 4. Produce a reviewed issuance file containing each member address, eligible
    payment amount, and calculated RG shares.
-5. Verify that the treasury received the funds.
+5. Freeze the reviewed batch and have a second person verify its entries.
 6. Submit one proposal containing the batch `mintShares` call.
 7. Have at least one person other than the preparer verify the proposal calldata
    against the reviewed issuance file.
@@ -42,15 +42,15 @@ recipients = [memberA, memberB, memberC]
 amounts    = [80e18,   40e18,   20e18]
 ```
 
-The standard RG price is $5. The member subscription program applies a 50%
-discount, making the subscription issuance price $2.50 or 2.5 wxDAI per share.
-The example therefore represents payments of 200, 100, and 50.
+The proposed reference price is $5 per RG. The proposed member rate is 50%
+lower, or 2.5 wxDAI per share. If approved, this illustrative example would
+represent payments of 200, 100, and 50 wxDAI. It is not an executed mint.
 The proposal may be created through a DAOhaus membership/minting form if it
 supports multiple recipients, or as a custom contract/multicall proposal.
 
 ## Required validation
 
-Before generating proposal calldata, the issuance data should enforce:
+If the DAO approves the SOP, proposal preparation should enforce:
 
 ```text
 eligible payment per member <= 200 wxDAI
@@ -76,8 +76,7 @@ encoded as `80000000000000000000`.
 
 Each monthly proposal should identify:
 
-- the provider settlement period;
-- the bank-to-chain or conversion transaction hash;
+- the monthly cutoff and Gnosis payment transaction hashes;
 - gross customer payments;
 - refunds, disputes, and chargebacks;
 - processing and conversion fees;
@@ -94,16 +93,17 @@ normally wallet addresses and amounts.
 
 ### Gross or net pricing
 
-Choose whether a 200 currency-unit charge purchases 80 shares even when
-the DAO receives less after fees, or whether shares are based on net proceeds.
+If card payments are later introduced, choose whether a 200 currency-unit
+charge purchases 80 shares when the DAO receives less after fees, or whether
+shares are based on net proceeds.
 
 Using the gross charge is easier for members to understand and treats payment
 processing fees as a DAO expense. Whatever rule is chosen should remain stable
-and be stated in the subscription terms.
+and be stated in any future member contribution terms.
 
 ### Currency conversion
 
-The 2.5 price is denominated in wxDAI. If the provider charges another currency, the
+The proposed 2.5 price is denominated in wxDAI. If a future provider charges another currency, the
 DAO needs a documented conversion rule, timestamp, exchange-rate source, and
 rounding policy.
 

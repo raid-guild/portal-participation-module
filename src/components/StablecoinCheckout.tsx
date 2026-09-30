@@ -7,7 +7,6 @@ import { encodeFunctionData, getAddress, parseAbi } from 'viem'
 
 import { MEMBER_SUBSCRIPTION_SHARE_PRICE_USD } from '@/lib/domain/participation'
 import type { ParticipationClass } from '@/lib/domain/participation'
-import type { PaymentPlanKey } from '@/lib/payments/types'
 
 import { StatusPill } from './StatusPill'
 
@@ -45,11 +44,8 @@ export function StablecoinCheckout({ initialAmount, participationClass }: { init
     setError('')
     setStatus('preparing')
     try {
-      const planKey = (isMember
-        ? `member_share_${amount}`
-        : participationClass === 'cohort_grad'
-          ? 'cohort_grad_20'
-          : 'cohort_participant_20') as PaymentPlanKey
+      if (!isMember) throw new Error('Monthly contributions are available to RaidGuild members only.')
+      const planKey = `member_share_${amount}`
       const response = await fetch('/api/payments/intents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -124,7 +120,7 @@ export function StablecoinCheckout({ initialAmount, participationClass }: { init
     <main className="web3-checkout-main">
       <Link className="back-link" href="/"><ArrowLeft size={15} /> Return to participation dashboard</Link>
       <section className="web3-checkout-hero">
-        <div><span className="eyebrow">Direct stablecoin payment</span><h1>Pay with wxDAI</h1><p>Send this month&apos;s payment directly to the RaidGuild treasury on Gnosis Chain.</p></div>
+        <div><span className="eyebrow">Optional member contribution</span><h1>Pay with wxDAI</h1><p>Send this month&apos;s optional member contribution directly to the RaidGuild treasury on Gnosis Chain.</p></div>
         <StatusPill tone={status === 'confirmed' ? 'good' : 'signal'}>{status === 'confirmed' ? 'Payment verified' : 'Non-custodial transfer'}</StatusPill>
       </section>
 
@@ -134,7 +130,7 @@ export function StablecoinCheckout({ initialAmount, participationClass }: { init
           <div className="web3-amount"><strong>{amount}.00</strong><span>wxDAI</span></div>
           {isMember && !intent ? <><label className="range-label" htmlFor="live-member-amount"><span>Monthly amount</span><strong>${amount}</strong></label><input id="live-member-amount" max="200" min="20" onChange={(event) => setAmount(Number(event.target.value))} step="20" type="range" value={amount} /></> : null}
           <p className="fine-print">Manual payment for the current month. No token approval or automatic renewal is requested.</p>
-          {isMember ? <div className="web3-discount"><StatusPill tone="signal">50% member discount</StatusPill><span><strong>{shares} RG</strong> for DAO proposal review after confirmation</span></div> : <div className="web3-discount"><span>No RG shares are issued for this participation class.</span></div>}
+          {isMember ? <div className="web3-discount"><StatusPill tone="signal">Proposed 50% discount</StatusPill><span><strong>{shares} RG estimated</strong> for review in a manual DAO proposal, subject to DAO approval and execution</span></div> : <div className="web3-discount"><span>Cohort participation is free.</span></div>}
         </article>
 
         <article className="section-card web3-wallet-card">
@@ -150,7 +146,7 @@ export function StablecoinCheckout({ initialAmount, participationClass }: { init
       <section className="section-card transfer-review-card">
         <div className="section-heading"><div><span className="eyebrow">Independent verification</span><h2>{status === 'confirmed' ? 'Payment confirmed' : 'Transaction status'}</h2></div><ShieldCheck size={25} /></div>
         {status === 'confirming' ? <div className="transaction-simulation"><span><RefreshCw className="spin-icon" size={20} /><strong>Confirming on Gnosis</strong></span><p>{confirmations} of 12 confirmations. Your transaction is not treated as payment until server verification completes.</p><button className="button button--primary" onClick={() => verify()} type="button">Check confirmations</button>{transactionHash ? <a className="text-action" href={`https://gnosisscan.io/tx/${transactionHash}`} rel="noreferrer" target="_blank">View transaction <ExternalLink size={15} /></a> : null}</div> : null}
-        {status === 'confirmed' ? <div className="verified-receipt"><CheckCircle2 size={32} /><span><strong>Payment independently verified</strong><small>Dashboard access and member share review now use this confirmed record.</small></span><Link className="text-action" href="/">Return to dashboard</Link></div> : null}
+        {status === 'confirmed' ? <div className="verified-receipt"><CheckCircle2 size={32} /><span><strong>Payment independently verified</strong><small>This record can be reviewed for a manual DAO share proposal. No shares are issued by this payment.</small></span><Link className="text-action" href="/">Return to dashboard</Link></div> : null}
         {status === 'idle' || status === 'preparing' || status === 'ready' || status === 'signing' ? <p>Prepare the intent and approve the exact wxDAI transfer. The app cannot move funds without your wallet signature.</p> : null}
       </section>
     </main>

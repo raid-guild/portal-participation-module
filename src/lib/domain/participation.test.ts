@@ -24,10 +24,14 @@ describe('participation domain', () => {
     expect(capabilities).not.toContain('shares.subscription_eligible')
   })
 
-  it('removes graduate paid access when no subscription is active', () => {
-    expect(
-      deriveCapabilities({ billingStatus: 'not_started', credentials: ['cohort_grad'] }),
-    ).toEqual([])
+  it('keeps cohort participation available regardless of payment state', () => {
+    for (const credentials of [['cohort_grad'], ['cohort_participant']] as const) {
+      const active = deriveCapabilities({ billingStatus: 'active', credentials: [...credentials] })
+      expect(active).toContain('coworking.standard')
+      expect(deriveCapabilities({ billingStatus: 'not_started', credentials: [...credentials] })).toEqual(active)
+      expect(deriveCapabilities({ billingStatus: 'past_due', credentials: [...credentials] })).toEqual(active)
+      expect(deriveCapabilities({ billingStatus: 'canceled', credentials: [...credentials] })).toEqual(active)
+    }
   })
 
   it('never grants shares to a cohort graduate', () => {

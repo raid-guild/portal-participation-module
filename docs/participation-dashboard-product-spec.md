@@ -2,9 +2,27 @@
 
 ## Status
 
-Early product definition. This document defines the first useful shape of a
-standalone Next.js participation and subscription app launched from the
-RaidGuild Portal.
+Historical early product definition for a standalone Next.js participation app
+launched from the RaidGuild Portal. Sections below that describe a paid cohort,
+approved share price, or automatic subscription are superseded by the current
+policy direction in the next section.
+
+## Current policy direction (September 2026)
+
+- Cohort participation and graduate recognition are free. A missed or canceled
+  payment does not remove either standing or their free participation access.
+- The cohort is expected to become a mostly async build challenge. The challenge
+  brief, review rubric, host schedule, and member pathway will be designed
+  separately; this module does not run that program.
+- Existing RaidGuild members may choose a manual monthly wxDAI contribution of
+  $20–$200. No payment is required to keep Guild membership.
+- The 50% discounted RG share rate is a proposed SOP, pending DAO approval. A
+  payment can be included in a reconciled monthly batch for a manual DAO
+  proposal; it does not mint shares or guarantee approval.
+- `@raidguild.org` email, personal sites, and RG AI assistant access are possible
+  future member perks. The module does not provide them today.
+- Historical cohort payment records and confirmation paths remain readable, but
+  new cohort payment intents are closed.
 
 The first implementation should use manual monthly wxDAI payments and the
 monthly batch `mintShares` workflow. A provider-neutral card adapter and the

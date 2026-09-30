@@ -2,10 +2,10 @@
 
 ## Decision
 
-The launch payment rail is a live manual monthly wxDAI transfer directly to the
-RaidGuild treasury Safe. Card payments and automatic renewal are shown as
-coming soon while entity eligibility, acceptable-use approval, merchant-of-
-record needs, tax handling, and provider selection remain unresolved.
+The current payment rail is an optional manual monthly wxDAI transfer from
+RaidGuild members directly to the treasury Safe. Cohort participation and
+graduate recognition are free. Card payments and automatic renewal are future
+options requiring separate policy and provider decisions.
 
 The provider-neutral recurring-fiat contract stays in the codebase as a future
 extension point, but it is not enabled in launch configuration. Production
@@ -39,9 +39,10 @@ The provider is responsible for:
 
 The application is responsible for:
 
-- determining which plan a Portal credential may purchase;
+- allowing new payment intents only for verified members;
 - mapping internal plan keys to provider configuration;
-- subscription and entitlement state;
+- payment records and derived entitlements, while free cohort access stays
+  independent of billing;
 - webhook idempotency and ordering;
 - the past-due grace policy;
 - share eligibility and reconciliation; and
@@ -57,12 +58,11 @@ member_share_20
 member_share_40
 ...
 member_share_200
-cohort_grad_20
-cohort_participant_20
 ```
 
-Each live adapter maps these keys to its own opaque identifiers using server-side
-configuration.
+`cohort_grad_20` and `cohort_participant_20` remain typed only for historical
+records and existing intent confirmation. New intents reject both keys. A
+future provider would map active member keys through server-side configuration.
 
 ## Normalized payment events
 
@@ -141,9 +141,9 @@ The payer supplies or the connected wallet returns the transaction hash. The
 server independently verifies it through a trusted Gnosis RPC/indexer. A browser
 claim that payment succeeded is never enough.
 
-Direct wxDAI is a manual payment for a defined monthly coverage period. It is
-not an automatically renewing subscription. The dashboard shows `paid through`
-and prompts for the next payment. Automatic token pulls, unlimited allowances,
+Direct wxDAI is an optional manual member contribution for one monthly period.
+It is not an automatically renewing subscription. The dashboard shows whether
+the current month is confirmed. Automatic token pulls, unlimited allowances,
 streaming protocols, and a payment-router contract are deferred.
 
 Direct-to-Safe matching has an edge case when the same wallet sends the same
@@ -167,11 +167,11 @@ controls must be disabled outside explicit mock mode.
 The mock should exercise:
 
 - eligible and ineligible plan selection;
-- successful payment confirmation and the next-period renewal prompt;
-- past-due and recovery states;
+- successful member payment confirmation;
+- historical payment states without restricting free cohort access;
 - cancellation at period end;
 - duplicate and out-of-order events; and
-- member-only share accrual;
+- member-only estimated share eligibility, subject to DAO approval;
 - wrong chain, token, sender, recipient, or amount; and
 - reused or insufficiently confirmed transaction hashes.
 

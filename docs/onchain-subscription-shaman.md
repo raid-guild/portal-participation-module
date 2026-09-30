@@ -3,6 +3,9 @@
 ## Status
 
 This is a possible later implementation, not the recommended starting point.
+All prices, discounts, caps, and issuance formulas below are illustrative
+design assumptions pending DAO approval of a member contribution SOP. The
+current module uses manual wxDAI payments and has no share-mint authority.
 It would automate recurring wxDAI settlement and RG share issuance, but it must
 hold Moloch v3 Manager permission to call `mintShares` outside the normal
 proposal process.
@@ -24,11 +27,12 @@ in the Shaman's public functions could still misuse that authority.
 - A DAO proposal can deposit backed wxDAI for multiple members when payments
   were collected outside crypto.
 
-At 2.5 wxDAI per share and a 200 wxDAI monthly cap, no member may receive more
-than 80 RG shares from the Shaman in one monthly epoch.
+If the proposed rate of 2.5 wxDAI per share and proposed 200 wxDAI monthly cap
+are approved, the illustrative per-member maximum would be 80 RG shares in a
+monthly epoch.
 
-This is the member subscription price: a 50% discount from the standard $5 RG
-share price.
+That would be a 50% discount from the reference $5 RG share price; neither
+the rate nor the cap is an adopted policy in this design document.
 
 ## Suggested interface
 
@@ -57,7 +61,7 @@ escrow credits and should not accept arbitrary share amounts.
 
 ## Core invariants
 
-The implementation and tests should continuously enforce:
+If the illustrative values are approved, implementation and tests should enforce:
 
 ```text
 minted shares for a member in an epoch <= 80 RG
@@ -72,7 +76,8 @@ revert without changing the member's balance or epoch state.
 
 ## Limits
 
-At minimum, the contract should have an immutable per-member epoch cap:
+At minimum, a future contract should have an immutable per-member epoch cap.
+These constants are examples only and must follow the DAO-approved terms:
 
 ```solidity
 uint256 constant PRICE_PER_SHARE = 2.5 ether;

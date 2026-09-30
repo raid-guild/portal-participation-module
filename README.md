@@ -1,13 +1,19 @@
 # RaidGuild Participation Module
 
-Standalone Next.js module for subscriptions, entitlements, participation
-signals, and monthly RG share issuance preparation.
+Standalone Next.js module for free cohort participation, optional member
+contributions, participation signals, and monthly RG share proposal review.
 
 The current implementation combines a live signed Portal authentication handoff,
 durable PostgreSQL state, canonical Gnosis membership snapshots, and manual
-monthly wxDAI payments directly to the RaidGuild treasury. Card payments remain
-a future provider-neutral rail. The app can prepare issuance review data but
+monthly member wxDAI contributions directly to the RaidGuild treasury. Cohort
+participation and graduate recognition do not require payment. Card payments remain
+a possible future rail. The app can prepare issuance review data but
 has no wallet key, Shaman permission, or RaidGuild DAO mint authority.
+
+The discounted member share rate is a proposal for DAO approval, not an approved
+issuance promise. Any shares require a reconciled manual batch, a DAO proposal,
+approval, and onchain execution. Member email, personal sites, and an RG AI
+assistant are ideas under review and are not provided by this module.
 
 ## Run locally
 

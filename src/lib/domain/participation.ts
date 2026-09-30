@@ -65,13 +65,10 @@ export function deriveCapabilities({
     ]
   }
 
-  if (!paid) return []
-
   if (participationClass === 'cohort_grad') {
     return [
       'coworking.standard',
       'coworking.apprentice',
-      'raids.full_priority_2_apprentice',
       'learning.library',
       'learning.live_programming',
       'networking.access',

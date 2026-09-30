@@ -111,12 +111,12 @@ export function MockStablecoinCheckout({
         <article className="section-card web3-payment-card">
           <span className="eyebrow">Payment amount</span>
           <div className="web3-amount"><strong>{amount}.00</strong><span>wxDAI</span></div>
-          <p>Approximately ${amount}.00 · one monthly participation period</p>
+          <p>Approximately ${amount}.00 · optional member contribution</p>
           <p className="fine-print">This payment does not renew automatically. Portal will prompt you before the next period.</p>
           {isMember ? (
             <div className="web3-discount">
-              <StatusPill tone="signal">{MEMBER_SUBSCRIPTION_DISCOUNT_PERCENT}% member discount</StatusPill>
-              <span><strong>{eligibleShares} RG</strong> estimated for the monthly proposal</span>
+              <StatusPill tone="signal">Proposed {MEMBER_SUBSCRIPTION_DISCOUNT_PERCENT}% discount</StatusPill>
+              <span><strong>{eligibleShares} RG</strong> estimated for manual DAO proposal review, subject to approval</span>
             </div>
           ) : (
             <div className="web3-discount"><span>No RG shares are issued for this participation class.</span></div>
@@ -181,7 +181,7 @@ export function MockStablecoinCheckout({
         ) : (
           <div className="verified-receipt">
             <CheckCircle2 size={32} />
-            <span><strong>Payment independently verified</strong><small>Paid through September 30, 2026</small></span>
+            <span><strong>Mock payment verified</strong><small>No real payment or RG issuance occurred.</small></span>
             <button className="text-action" type="button">Mock transaction <ExternalLink size={15} /></button>
           </div>
         )}

@@ -13,10 +13,11 @@ describe('entitlement service', () => {
     expect(snapshot?.capabilities).toContain('shares.subscription_eligible')
   })
 
-  it('returns no paid capabilities for the past-due participant', () => {
+  it('retains free cohort capabilities for a past-due legacy participant', () => {
     const snapshot = getMockEntitlementSnapshot('portal-1317')
 
-    expect(snapshot?.capabilities).toEqual([])
+    expect(snapshot?.capabilities).toContain('coworking.standard')
+    expect(snapshot?.capabilities).not.toContain('shares.subscription_eligible')
   })
 
   it('plans replace operations without mutating a consumer', () => {

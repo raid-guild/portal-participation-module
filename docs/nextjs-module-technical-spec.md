@@ -2,10 +2,12 @@
 
 ## Status
 
-Implementation baseline for the standalone Participation Dashboard. The first
-slice runs entirely with deterministic mock data. Portal auth and payment seams
-are represented in the architecture but no live payment or bank connection is
-required.
+Historical implementation baseline for the standalone Participation Dashboard.
+The module now has live Portal auth and manual wxDAI member payment support.
+Sections below that describe paid cohort plans, required cohort subscriptions,
+or a settled share price are superseded: cohort participation and graduate
+recognition are free; member contributions are optional; discounted share
+issuance remains a proposal pending DAO approval.
 
 ## Runtime and repository
 
@@ -131,25 +133,19 @@ state.
 
 ## Subscription products
 
-Initial product model:
+Current payment plan catalog for new intents:
 
 ```text
-member_share_subscription
-  optional, $20-$200 monthly, member credential required
-
-cohort_grad_active
-  $20 monthly, cohort_grad credential required, no shares
-
-cohort_participant_active
-  $20 monthly, cohort_participant credential required, no shares
+member_share_20 through member_share_200
+  optional manual monthly wxDAI member contribution, in $20 increments
 ```
 
-For the member sliding amount, prefer a fixed set of approved monthly prices in
-the first live version (`$20, $40, ... $200`) rather than accepting arbitrary
-client-provided amounts. The server maps the chosen amount to a configured
-provider-specific price reference. Never accept such a reference or currency
-amount directly from the browser without validating the internal plan key
-against server configuration.
+`cohort_grad_20` and `cohort_participant_20` remain as historical payment keys
+for existing records and intent confirmation. New cohort intents are rejected.
+The current member amounts use a fixed set (`$20, $40, ... $200`) and server
+validation of the internal plan key. The proposed $2.50 per RG share rate
+requires a separate DAO-approved SOP before any issuance is promised. A future
+fiat adapter would map member plans to provider-specific price references.
 
 ## Persistence target
 
