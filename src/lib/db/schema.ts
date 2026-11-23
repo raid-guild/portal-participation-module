@@ -203,6 +203,7 @@ export const participationMetricImports = pgTable(
     sourceTaskKey: text('source_task_key').notNull(),
     sourceRunId: text('source_run_id').notNull(),
     artifactSha256: text('artifact_sha256').notNull(),
+    contentSha256: text('content_sha256'),
     status: text('status').notNull().default('provisional'),
     memberCount: integer('member_count').notNull(),
     matchedCount: integer('matched_count').notNull(),
@@ -259,6 +260,107 @@ export const participationMetricLines = pgTable(
       'participation_metric_lines_total_check',
       sql`${table.totalScore} = ${table.engagementScore} + ${table.stewardshipScore} + ${table.contributionScore} and ${table.totalScore} between 0 and 150`,
     ),
+  ],
+)
+
+export const participationMetricApprovals = pgTable(
+  'participation_metric_approvals',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    importId: uuid('import_id').notNull().references(() => participationMetricImports.id, { onDelete: 'restrict' }),
+    contentSha256: text('content_sha256').notNull(),
+    approvedByUserId: uuid('approved_by_user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+    approvedAt: timestamp('approved_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('participation_metric_approvals_import_unique').on(table.importId)],
+)
+
+export const issuanceReviewSnapshots = pgTable(
+  'issuance_review_snapshots',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    periodKey: text('period_key').notNull(),
+    revision: integer('revision').notNull(),
+    supersedesId: uuid('supersedes_id'),
+    cutoffAt: timestamp('cutoff_at', { withTimezone: true }).notNull(),
+    membershipRunId: uuid('membership_run_id').notNull().references(() => daoMembershipRuns.id, { onDelete: 'restrict' }),
+    policyVersion: text('policy_version').notNull(),
+    paymentBasis: text('payment_basis').notNull(),
+    payload: jsonb('payload').notNull(),
+    payloadSha256: text('payload_sha256').notNull(),
+    createdByUserId: uuid('created_by_user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('issuance_review_snapshots_period_revision_unique').on(table.periodKey, table.revision),
+    index('issuance_review_snapshots_period_idx').on(table.periodKey, table.createdAt),
+    check('issuance_review_snapshots_basis_check', sql`${table.paymentBasis} in ('gross', 'net', 'unresolved')`),
+  ],
+)
+
+export const issuanceReviewSources = pgTable(
+  'issuance_review_sources',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    snapshotId: uuid('snapshot_id').notNull().references(() => issuanceReviewSnapshots.id, { onDelete: 'restrict' }),
+    paymentId: uuid('payment_id').notNull().references(() => payments.id, { onDelete: 'restrict' }),
+    included: boolean('included').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('issuance_review_sources_snapshot_payment_unique').on(table.snapshotId, table.paymentId)],
+)
+
+export const issuanceReviewDecisions = pgTable(
+  'issuance_review_decisions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    snapshotId: uuid('snapshot_id').notNull().references(() => issuanceReviewSnapshots.id, { onDelete: 'restrict' }),
+    payloadSha256: text('payload_sha256').notNull(),
+    reviewerUserId: uuid('reviewer_user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+    decision: text('decision').notNull(),
+    note: text('note').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('issuance_review_decisions_snapshot_unique').on(table.snapshotId),
+    uniqueIndex('issuance_review_decisions_snapshot_reviewer_unique').on(table.snapshotId, table.reviewerUserId),
+    check('issuance_review_decisions_decision_check', sql`${table.decision} in ('approved', 'rejected')`),
+  ],
+)
+
+export const issuanceProposalArtifacts = pgTable(
+  'issuance_proposal_artifacts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    snapshotId: uuid('snapshot_id').notNull().references(() => issuanceReviewSnapshots.id, { onDelete: 'restrict' }),
+    snapshotSha256: text('snapshot_sha256').notNull(),
+    artifactSha256: text('artifact_sha256').notNull(),
+    builderUserId: uuid('builder_user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+    submitterAddress: text('submitter_address').notNull(),
+    artifact: jsonb('artifact').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('issuance_proposal_artifacts_hash_unique').on(table.artifactSha256),
+    index('issuance_proposal_artifacts_snapshot_idx').on(table.snapshotId, table.createdAt),
+  ],
+)
+
+export const issuanceProposalDecisions = pgTable(
+  'issuance_proposal_decisions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    artifactId: uuid('artifact_id').notNull().references(() => issuanceProposalArtifacts.id, { onDelete: 'restrict' }),
+    artifactSha256: text('artifact_sha256').notNull(),
+    reviewerUserId: uuid('reviewer_user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+    decision: text('decision').notNull(),
+    note: text('note').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('issuance_proposal_decisions_artifact_unique').on(table.artifactId),
+    check('issuance_proposal_decisions_decision_check', sql`${table.decision} in ('approved', 'rejected')`),
   ],
 )
 
@@ -348,6 +450,31 @@ export const payments = pgTable(
     uniqueIndex('payments_transaction_hash_unique').on(table.chainId, table.transactionHash),
     uniqueIndex('payments_intent_id_unique').on(table.intentId),
     index('payments_user_period_idx').on(table.userId, table.periodKey),
+  ],
+)
+
+export const paymentObservations = pgTable(
+  'payment_observations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    intentId: uuid('intent_id').notNull().references(() => paymentIntents.id, { onDelete: 'restrict' }),
+    chainId: integer('chain_id').notNull(),
+    transactionHash: text('transaction_hash').notNull(),
+    status: text('status').notNull().default('pending'),
+    confirmations: integer('confirmations').notNull().default(0),
+    blockNumber: bigint('block_number', { mode: 'bigint' }),
+    blockHash: text('block_hash'),
+    minedAt: timestamp('mined_at', { withTimezone: true }),
+    attemptCount: integer('attempt_count').notNull().default(0),
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }).notNull().defaultNow(),
+    lastError: text('last_error'),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('payment_observations_chain_hash_unique').on(table.chainId, table.transactionHash),
+    uniqueIndex('payment_observations_intent_unique').on(table.intentId),
+    index('payment_observations_due_idx').on(table.status, table.nextAttemptAt),
+    check('payment_observations_status_check', sql`${table.status} in ('pending', 'confirming', 'confirmed', 'rejected', 'needs_review')`),
   ],
 )
 

@@ -96,6 +96,11 @@ shares directly.
 - [ ] Add a reminder workflow before the next manual monthly payment.
 - [ ] Add a narrowly scoped card-payment adapter when RaidGuild has an eligible
   provider and approved merchant/payout setup.
+- [ ] Pilot the Portal-linked Shopify card flow defined in
+  [Shopify Participation Pass](./shopify-participation-pass.md), starting with
+  one-time monthly purchases rather than automatic renewal.
+- [ ] Enforce the $200 member-contribution limit atomically across card and
+  wxDAI rails, including in-flight checkout reservations.
 
 ## Portal, Discord, and participation metrics
 
@@ -107,8 +112,9 @@ shares directly.
   changing subscriptions, entitlements, membership, or issuance state.
 - [x] Register a separate weekly Prism workflow/task that cannot enter the DAO
   proposal or onchain execution flow.
-- [ ] Add an explicit admin freeze/approval action for the final cycle snapshot.
-- [ ] Show approved cycle metrics and evidence freshness in the participant
+- [x] Add an explicit app-admin approval action for the exact provisional Prism
+  import content hash (implemented locally; production migration pending).
+- [x] Show approved cycle metrics and evidence freshness in the participant
   dashboard; never expose provisional or flagged evidence publicly.
 - [ ] Implement idempotent Portal entitlement delivery with a scoped service
   credential, durable outbox processing, retry policy, and rollback procedure.
@@ -120,6 +126,10 @@ shares directly.
 - [ ] Define the public/private boundary for activity, cohort, and member data.
 
 ## Operational maturity
+
+- [x] Locally build, decode, simulate, and independently review a single-action batch `mintShares` proposal artifact from frozen issuance content; wallet submission remains disabled and migrations/fork verification are pending.
+- [ ] Verify proposal preparation against an isolated Gnosis fork and isolated PostgreSQL, then complete an independent governance/security review before enabling any wallet submission.
+- [ ] Add a guarded connected-wallet proposal submission flow with successful receipt and `SubmitProposal` event verification; never add server-side signing, auto-sponsoring, voting, processing or minting.
 
 - [ ] Add scheduled DAO membership snapshots and alert on contract/token
   validation failure.

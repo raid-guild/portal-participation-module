@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "issuance_review_decisions_snapshot_unique" ON "issuance_review_decisions" USING btree ("snapshot_id");

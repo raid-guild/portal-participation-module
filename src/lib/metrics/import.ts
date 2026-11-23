@@ -1,7 +1,9 @@
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
 import { getAddress, isAddress } from 'viem'
 
 import { getDatabase } from '../db/client'
+import { canonicalSha256 } from '../immutable/canonical'
+import { isActiveVerifiedGnosisWallet } from './wallet-policy'
 import {
   auditEvents,
   participationMetricImports,
@@ -198,6 +200,7 @@ export function validateParticipationMetricImport(
 
 export async function importParticipationMetrics(input: ParticipationMetricImportInput) {
   const database = getDatabase()
+  const contentSha256 = metricContentSha256(input)
   const [existing] = await database
     .select()
     .from(participationMetricImports)
@@ -205,7 +208,7 @@ export async function importParticipationMetrics(input: ParticipationMetricImpor
     .limit(1)
 
   if (existing) {
-    if (existing.artifactSha256 !== input.artifactSha256) {
+    if (existing.artifactSha256 !== input.artifactSha256 || existing.contentSha256 !== contentSha256) {
       return { conflict: true as const, import: existing }
     }
     return { conflict: false as const, idempotent: true as const, import: existing }
@@ -214,24 +217,28 @@ export async function importParticipationMetrics(input: ParticipationMetricImpor
   const walletAddresses = input.members.map((member) => member.walletAddress)
   const linkedWallets = walletAddresses.length
     ? await database
-        .select({ address: walletLinks.address, userId: walletLinks.userId })
+        .select({ address: walletLinks.address, userId: walletLinks.userId, chainId: walletLinks.chainId, verifiedAt: walletLinks.verifiedAt, revokedAt: walletLinks.revokedAt })
         .from(walletLinks)
         .where(and(
           eq(walletLinks.chainId, 100),
           inArray(walletLinks.address, walletAddresses),
           isNull(walletLinks.revokedAt),
+          isNotNull(walletLinks.verifiedAt),
         ))
     : []
   const userByAddress = new Map(
-    linkedWallets.map((wallet) => [wallet.address.toLowerCase(), wallet.userId]),
+    linkedWallets.filter(isActiveVerifiedGnosisWallet).map((wallet) => [wallet.address.toLowerCase(), wallet.userId]),
   )
   const matchedCount = input.members.filter((member) => userByAddress.has(member.walletAddress.toLowerCase())).length
 
-  const created = await database.transaction(async (transaction) => {
+  let created
+  try {
+    created = await database.transaction(async (transaction) => {
     const [record] = await transaction
       .insert(participationMetricImports)
       .values({
         artifactSha256: input.artifactSha256,
+        contentSha256,
         cycleKey: input.cycleKey,
         generatedAt: new Date(input.generatedAt),
         matchedCount,
@@ -279,9 +286,49 @@ export async function importParticipationMetrics(input: ParticipationMetricImpor
       entityType: 'participation_metric_import',
     })
     return record
-  })
+    })
+  } catch (error) {
+    if (!isUniqueViolation(error)) throw error
+    const [winner] = await database.select().from(participationMetricImports).where(and(
+      eq(participationMetricImports.sourceSystem, input.sourceSystem),
+      eq(participationMetricImports.sourceRunId, input.sourceRunId),
+    )).limit(1)
+    if (!winner) throw error
+    return winner.artifactSha256 === input.artifactSha256 && winner.contentSha256 === contentSha256
+      ? { conflict: false as const, idempotent: true as const, import: winner }
+      : { conflict: true as const, import: winner }
+  }
 
   return { conflict: false as const, idempotent: false as const, import: created }
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  return Boolean(error && typeof error === 'object' && 'code' in error && error.code === '23505')
+}
+
+export function metricContentSha256(input: ParticipationMetricImportInput): string {
+  return canonicalSha256({
+    artifactSha256: input.artifactSha256,
+    cycleKey: input.cycleKey,
+    generatedAt: new Date(input.generatedAt).toISOString(),
+    members: input.members.map((member) => ({
+      auditFlags: [...(member.auditFlags ?? [])].sort(),
+      contributionScore: member.contributionScore,
+      displayName: member.displayName ?? null,
+      engagementScore: member.engagementScore,
+      evidenceRefs: [...(member.evidenceRefs ?? [])].sort(),
+      stewardshipScore: member.stewardshipScore,
+      walletAddress: getAddress(member.walletAddress),
+    })).sort((a, b) => a.walletAddress.toLowerCase().localeCompare(b.walletAddress.toLowerCase())),
+    schemaVersion: input.schemaVersion,
+    snapshotKey: input.snapshotKey,
+    sourceRunId: input.sourceRunId,
+    sourceSystem: input.sourceSystem,
+    sourceTaskKey: input.sourceTaskKey,
+    status: input.status,
+    windowEndsAt: new Date(input.windowEndsAt).toISOString(),
+    windowStartsAt: new Date(input.windowStartsAt).toISOString(),
+  })
 }
 
 export async function getLatestParticipationMetricSnapshot() {

@@ -9,6 +9,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/lib/db/migrate.ts",
     "dao:refresh": "tsx scripts/refresh-dao-membership.ts",
+    "payments:reconcile": "tsx scripts/reconcile-payments.ts",
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",

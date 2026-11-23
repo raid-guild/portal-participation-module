@@ -13,10 +13,17 @@ current policy direction at the top of that spec.
 Implementation and payment setup are described in the
 [Next.js Module Technical Spec](./nextjs-module-technical-spec.md) and
 [Payment Provider Integration](./payment-provider-integration.md). The
+[Shopify Participation Pass](./shopify-participation-pass.md) proposes a
+Portal-linked, one-time card-payment pilot using the separate RaidGuild
+Commerce app while preserving the Participation module's entitlement and
+governance boundaries. The
 [Entitlement Service API](./entitlement-service-api.md) defines the boundary
 for Portal, Discord, manual operators, and future agents. The
 [Prism Participation Metrics](./prism-participation-metrics.md) runbook defines
 the weekly admin-only snapshot integration.
+The [Immutable Issuance Review](./issuance-review-ops.md) runbook covers
+revisioned monthly evidence, independent admin decisions, and the separate
+approved-metrics display boundary.
 Deliberately deferred production and governance work is tracked in the
 [Future Feature Checklist](./future-feature-checklist.md).
 
@@ -34,6 +41,8 @@ permissions. The Shaman remains a possible later step if manual monthly
 reconciliation becomes too burdensome.
 
 ## Current assumptions
+
+The local [batch mintShares proposal preparation runbook](./governance-proposal-ops.md) documents the frozen-content, simulation and independent approval gates. It does not authorize proposal submission or onchain issuance.
 
 - Network: Gnosis Chain (`0x64`)
 - Baal DAO: `0xf02fd4286917270cb94fbc13a0f4e1ed76f7e986`

@@ -3,9 +3,9 @@ export function createOpenApiDocument() {
     openapi: '3.1.0',
     info: {
       title: 'RaidGuild Participation Service API',
-      version: '0.2.0',
+      version: '0.3.0',
       description:
-        'Service API for participation entitlements, delivery planning, and provisional Prism metric imports. Metric imports cannot change access, billing, membership, or issue shares.',
+        'Service API for participation entitlements, delivery planning, provisional Prism metric imports, admin-approved metric display, immutable issuance review, and reviewed governance proposal preparation. Metrics cannot change access, billing, membership, or issue shares. No proposal submission or minting is exposed.',
     },
     servers: [{ url: '/' }],
     paths: {
@@ -53,6 +53,42 @@ export function createOpenApiDocument() {
           summary: 'Export canonical membership and confirmed-payment review data',
         },
       },
+      '/api/admin/issuance': {
+        get: {
+          operationId: 'listFrozenIssuanceReviews',
+          responses: { '200': { description: 'List immutable monthly review revisions' }, '403': { description: 'Current app admin required' } },
+          security: [{ sessionCookie: [] }], summary: 'List frozen issuance evidence',
+        },
+        post: {
+          operationId: 'freezeIssuanceReview',
+          responses: { '201': { description: 'Frozen hashed revision' }, '403': { description: 'Current app admin required' }, '409': { description: 'Period or membership evidence not ready' } },
+          security: [{ sessionCookie: [] }], summary: 'Freeze a closed UTC month for independent review',
+        },
+      },
+      '/api/admin/issuance/{id}': {
+        get: { operationId: 'getFrozenIssuanceReview', responses: { '200': { description: 'Frozen payload and current staleness' }, '403': { description: 'Current app admin required' } }, security: [{ sessionCookie: [] }], summary: 'Inspect a frozen issuance revision' },
+      },
+      '/api/admin/issuance/{id}/export': {
+        get: { operationId: 'exportFrozenIssuanceReview', responses: { '200': { description: 'Hashed JSON evidence artifact' }, '403': { description: 'Current app admin required' } }, security: [{ sessionCookie: [] }], summary: 'Download immutable monthly review evidence' },
+      },
+      '/api/admin/issuance/{id}/review': {
+        post: { operationId: 'reviewFrozenIssuance', responses: { '200': { description: 'Append-only independent admin decision' }, '403': { description: 'Creator or non-admin cannot approve' }, '409': { description: 'Stale, blocked, or superseded revision' } }, security: [{ sessionCookie: [] }], summary: 'Record independent approval or rejection of exact payload hash' },
+      },
+      '/api/admin/issuance/{id}/proposal': {
+        post: { operationId: 'simulateBatchMintProposal', responses: { '201': { description: 'Immutable, server-built, decoded and simulated proposal artifact' }, '403': { description: 'Current app admin required' }, '409': { description: 'Frozen evidence, chain configuration, or simulation failed' } }, security: [{ sessionCookie: [] }], summary: 'Build one batch mintShares proposal from independently approved frozen content' },
+      },
+      '/api/admin/proposals/{id}': {
+        get: { operationId: 'getBatchMintProposalArtifact', responses: { '200': { description: 'Decoded artifact, simulation, review and readiness state' }, '403': { description: 'Current app admin required' } }, security: [{ sessionCookie: [] }], summary: 'Inspect a governance proposal artifact' },
+      },
+      '/api/admin/proposals/{id}/review': {
+        post: { operationId: 'reviewBatchMintProposalArtifact', responses: { '200': { description: 'Append-only decision bound to exact artifact hash' }, '403': { description: 'Builder cannot approve or non-admin denied' }, '409': { description: 'Artifact stale, superseded, expired or already reviewed' } }, security: [{ sessionCookie: [] }], summary: 'Independently approve or reject a simulated proposal artifact' },
+      },
+      '/api/admin/proposals/{id}/prepare': {
+        post: { operationId: 'prepareBatchMintWalletTransaction', responses: { '200': { description: 'Server-built wallet transaction only; no submission or signing' }, '403': { description: 'Current app admin required' }, '409': { description: 'Approval, pinned block, chain config, or fresh simulation failed' } }, security: [{ sessionCookie: [] }], summary: 'Revalidate approved artifact and return its exact wallet transaction request' },
+      },
+      '/api/admin/metrics/{id}/approve': {
+        post: { operationId: 'approvePrismMetricImport', responses: { '200': { description: 'Approved exact import content hash for participant display' }, '403': { description: 'Current app admin required' }, '409': { description: 'Legacy import has no server content hash' } }, security: [{ sessionCookie: [] }], summary: 'Approve provisional Prism evidence without changing entitlements' },
+      },
       '/api/payments/intents': {
         post: {
           operationId: 'createStablecoinPaymentIntent',
@@ -90,6 +126,17 @@ export function createOpenApiDocument() {
           },
           security: [{ sessionCookie: [] }],
           summary: 'Verify a Gnosis wxDAI transaction against its intent',
+        },
+      },
+      '/api/payments/history': {
+        get: {
+          operationId: 'getOwnPaymentHistory',
+          responses: {
+            '200': { description: 'Own wxDAI intents, observations, and verified payment receipts' },
+            '401': { description: 'No valid browser session' },
+          },
+          security: [{ sessionCookie: [] }],
+          summary: 'List authenticated participant payment history',
         },
       },
       '/api/v1/entitlements/{portalUserId}': {

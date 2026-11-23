@@ -50,6 +50,55 @@
       "when": 1787238333425,
       "tag": "0006_certain_dragon_man",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795458073510,
+      "tag": "0007_true_network",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795459109597,
+      "tag": "0008_solid_tenebrous",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795459407710,
+      "tag": "0009_sad_spencer_smythe",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795459516858,
+      "tag": "0010_charming_giant_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795459837009,
+      "tag": "0011_issuance_integrity",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1795460368478,
+      "tag": "0012_odd_thunderbolt_ross",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1795460373425,
+      "tag": "0013_proposal_integrity",
+      "breakpoints": true
     }
   ]
 }

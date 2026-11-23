@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { validateParticipationMetricImport } from './import'
+import { metricContentSha256, validateParticipationMetricImport } from './import'
 
 const validInput = {
   artifactSha256: 'a'.repeat(64),
@@ -52,5 +52,14 @@ describe('participation metric import validation', () => {
       ok: false,
       message: 'Only provisional snapshots may be imported.',
     })
+  })
+
+  it('computes a normalized server-side hash and detects changed score content even with the same artifact digest', () => {
+    const first = metricContentSha256(validInput as Parameters<typeof metricContentSha256>[0])
+    const reordered = metricContentSha256({ ...validInput, members: [{ ...validInput.members[0], evidenceRefs: [...validInput.members[0].evidenceRefs].reverse() }] } as Parameters<typeof metricContentSha256>[0])
+    const changed = metricContentSha256({ ...validInput, members: [{ ...validInput.members[0], engagementScore: 0 }] } as Parameters<typeof metricContentSha256>[0])
+    expect(first).toMatch(/^[a-f0-9]{64}$/)
+    expect(reordered).toBe(first)
+    expect(changed).not.toBe(first)
   })
 })

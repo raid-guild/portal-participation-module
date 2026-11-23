@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNotNull, isNull } from 'drizzle-orm'
 import { formatUnits } from 'viem'
 
 import { getLatestSuccessfulMembershipRun } from '../dao/membership'
@@ -22,7 +22,7 @@ export async function getAdminParticipationReport(now = new Date()) {
   const run = await getLatestSuccessfulMembershipRun()
   const [allUsers, activeWallets, confirmedPayments, snapshots] = await Promise.all([
     database.select().from(users),
-    database.select().from(walletLinks).where(isNull(walletLinks.revokedAt)),
+    database.select().from(walletLinks).where(and(eq(walletLinks.chainId, 100), isNull(walletLinks.revokedAt), isNotNull(walletLinks.verifiedAt))),
     database
       .select()
       .from(payments)
@@ -37,12 +37,12 @@ export async function getAdminParticipationReport(now = new Date()) {
 
   const rows = allUsers.map((user) => {
     const userWallets = activeWallets.filter((wallet) => wallet.userId === user.id)
-    const userSnapshots = snapshots.filter((snapshot) => snapshot.userId === user.id)
+    const userSnapshots = snapshots.filter((snapshot) => snapshot.userId === user.id && userWallets.some((wallet) => wallet.id === snapshot.walletLinkId && wallet.address.toLowerCase() === snapshot.walletAddress.toLowerCase()))
     const userPayments = confirmedPayments.filter(
       (payment) => payment.userId === user.id && payment.planKey.startsWith('member_share_'),
     )
     const amountMinorUnits = userPayments.reduce((sum, payment) => sum + payment.amountMinorUnits, 0)
-    const eligibleSnapshot = userSnapshots.find((snapshot) => snapshot.eligible)
+    const eligibleSnapshot = userSnapshots.find((snapshot) => snapshot.eligible && BigInt(snapshot.shareBalanceRaw) >= 100n * 10n ** 18n)
     const largestBalance = userSnapshots.reduce(
       (largest, snapshot) => BigInt(snapshot.shareBalanceRaw) > largest ? BigInt(snapshot.shareBalanceRaw) : largest,
       0n,
@@ -72,7 +72,7 @@ export async function getAdminParticipationReport(now = new Date()) {
       portalUserId: user.portalUserId,
       shares,
       status,
-      wallets: userWallets.map((wallet) => wallet.address),
+      wallets: [eligibleSnapshot?.walletAddress, ...userWallets.map((wallet) => wallet.address)].filter((address, index, all): address is string => Boolean(address) && all.indexOf(address) === index),
     }
   })
 

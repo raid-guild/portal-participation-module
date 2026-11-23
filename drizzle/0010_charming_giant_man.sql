@@ -1,0 +1,1 @@
+DROP INDEX "issuance_review_snapshots_payload_hash_unique";

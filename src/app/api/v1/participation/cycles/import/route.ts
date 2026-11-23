@@ -44,6 +44,7 @@ export async function POST(request: Request) {
     {
       idempotent: result.idempotent,
       importId: result.import.id,
+      contentSha256: result.import.contentSha256,
       matchedCount: result.import.matchedCount,
       memberCount: result.import.memberCount,
       snapshotKey: result.import.snapshotKey,

@@ -6,6 +6,8 @@ import { AppShell } from '@/components/AppShell'
 import { StatusPill } from '@/components/StatusPill'
 import { getAdminParticipationReport } from '@/lib/admin/report'
 import { getLatestParticipationMetricSnapshot } from '@/lib/metrics/import'
+import { getMetricApproval } from '@/lib/metrics/approval'
+import { listIssuanceReviews } from '@/lib/issuance/service'
 import { getCurrentSession } from '@/lib/portal/session'
 
 function money(amountMinorUnits: number) {
@@ -17,16 +19,19 @@ function money(amountMinorUnits: number) {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ refresh?: string }>
+  searchParams: Promise<{ refresh?: string; metrics?: string }>
 }) {
   const session = await getCurrentSession()
   if (!session) redirect('/portal/auth-error?reason=login_required')
   if (!session.isAppAdmin) redirect('/?auth=forbidden')
-  const [report, metrics, query] = await Promise.all([
+  const [report, metrics, query, frozenReviews] = await Promise.all([
     getAdminParticipationReport(),
     getLatestParticipationMetricSnapshot(),
     searchParams,
+    listIssuanceReviews(),
   ])
+  const previousPeriod = new Date(Date.UTC(Number(report.periodKey.slice(0, 4)), Number(report.periodKey.slice(5, 7)) - 2, 1)).toISOString().slice(0, 7)
+  const metricApproval = metrics ? await getMetricApproval(metrics.import.id) : null
 
   return (
     <AppShell>
@@ -34,7 +39,7 @@ export default async function AdminPage({
         <Link className="back-link" href="/"><ArrowLeft size={15} /> Dashboard</Link>
         <section className="admin-hero">
           <div>
-            <span className="eyebrow">App administration · Canonical report</span>
+            <span className="eyebrow">App administration · Live preview and frozen reviews</span>
             <h1>Participation operations</h1>
             <p>Review subscription health and prepare a governance-safe monthly issuance batch.</p>
           </div>
@@ -48,6 +53,7 @@ export default async function AdminPage({
         </section>
 
         {query.refresh === 'succeeded' ? <div className="portal-notice">Gnosis membership snapshot refreshed.</div> : null}
+        {query.metrics === 'approved' ? <div className="portal-notice">Prism snapshot approved for participant display.</div> : null}
 
         <section className="section-card admin-table-card admin-metrics-card">
           <div className="section-heading">
@@ -86,6 +92,7 @@ export default async function AdminPage({
                 </table>
               </div>
               <p className="fine-print">This snapshot is evidence for administrator review only. It cannot change access, subscription status, DAO membership, or issue RG shares.</p>
+              {metricApproval ? <p className="source-note">Approved {metricApproval.approvedAt.toLocaleString()} · content {metricApproval.contentSha256.slice(0, 16)}…</p> : metrics.import.contentSha256 ? <form action={`/api/admin/metrics/${metrics.import.id}/approve`} method="post"><button className="button button--outline" type="submit">Approve for participant display</button></form> : <p className="source-note">Legacy import requires a new Prism run with a server-computed content hash before approval.</p>}
             </>
           ) : (
             <div className="empty-state empty-state--compact">
@@ -97,10 +104,17 @@ export default async function AdminPage({
         </section>
 
         <section className="section-card admin-table-card">
+          <div className="section-heading"><div><span className="eyebrow">Immutable monthly evidence</span><h2>Frozen issuance reviews</h2></div></div>
+          <p className="fine-print">Freeze a closed UTC month into a hashed, revisioned review artifact. A different app admin must approve it. This does not submit a DAO proposal or mint shares.</p>
+          <form action="/api/admin/issuance" method="post"><label htmlFor="freeze-period">Closed period</label><input id="freeze-period" name="periodKey" type="month" defaultValue={previousPeriod} required /><button className="button button--outline" type="submit">Freeze review snapshot</button></form>
+          {frozenReviews.length ? <div className="capability-list">{frozenReviews.slice(0, 12).map((snapshot) => <div className="capability-row" key={snapshot.id}><span><strong>{snapshot.periodKey} · revision {snapshot.revision}</strong><small>SHA-256 {snapshot.payloadSha256.slice(0, 20)}…</small></span><Link className="text-action" href={`/admin/issuance/${snapshot.id}`}>Review</Link></div>)}</div> : <p>No frozen monthly reviews yet.</p>}
+        </section>
+
+        <section className="section-card admin-table-card">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">{report.periodKey} · $2.50 per share</span>
-              <h2>Subscription review</h2>
+              <span className="eyebrow">{report.periodKey} · proposed $2.50 per share · live preview only</span>
+              <h2>Current subscription preview</h2>
             </div>
             <div className="admin-actions">
               <form action="/api/admin/dao-membership/refresh" method="post">
@@ -132,7 +146,7 @@ export default async function AdminPage({
           </div>
           <div className="admin-warning">
             <ShieldAlert aria-hidden="true" size={20} />
-            <p>Eligibility requires a Portal-verified Gnosis wallet holding at least 100 RG at the recorded block plus a confirmed payment for this period. Export is review-only; this app cannot mint shares.</p>
+            <p>This is a mutable live preview, not an approved issuance artifact. Eligibility requires a Portal-verified Gnosis wallet holding at least 100 RG at the recorded block plus a confirmed payment for this period. Export is review-only; this app cannot mint shares.</p>
           </div>
         </section>
       </main>
