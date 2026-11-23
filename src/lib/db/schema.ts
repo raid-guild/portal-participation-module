@@ -364,6 +364,55 @@ export const issuanceProposalDecisions = pgTable(
   ],
 )
 
+// Shopify test evidence is deliberately separate from the live payments and
+// subscriptions ledgers. A test capture can never affect billing or issuance.
+export const memberContributionCheckouts = pgTable(
+  'member_contribution_checkouts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'restrict' }),
+    portalIssuer: text('portal_issuer').notNull(),
+    portalUserId: text('portal_user_id').notNull(),
+    walletLinkId: uuid('wallet_link_id').notNull().references(() => walletLinks.id, { onDelete: 'restrict' }),
+    membershipRunId: uuid('membership_run_id').notNull().references(() => daoMembershipRuns.id, { onDelete: 'restrict' }),
+    periodKey: text('period_key').notNull(),
+    planKey: text('plan_key').notNull(),
+    amountMinor: integer('amount_minor').notNull(),
+    status: text('status').notNull().default('creating'),
+    commerceCheckoutId: text('commerce_checkout_id'),
+    checkoutUrl: text('checkout_url'),
+    orderId: text('order_id'),
+    cumulativeRefundedSubtotalMinor: integer('cumulative_refunded_subtotal_minor').notNull().default(0),
+    cumulativeRefundedTaxMinor: integer('cumulative_refunded_tax_minor').notNull().default(0),
+    taxMinor: integer('tax_minor').notNull().default(0),
+    errorCode: text('error_code'),
+    authorizedAt: timestamp('authorized_at', { withTimezone: true }).notNull().defaultNow(),
+    authorizationExpiresAt: timestamp('authorization_expires_at', { withTimezone: true }).notNull(),
+    capturedAt: timestamp('captured_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('member_contribution_checkouts_user_period_unique').on(table.userId, table.periodKey),
+    uniqueIndex('member_contribution_checkouts_commerce_unique').on(table.commerceCheckoutId),
+    check('member_contribution_checkouts_amount_check', sql`${table.amountMinor} between 2000 and 20000 and ${table.amountMinor} % 2000 = 0`),
+    check('member_contribution_checkouts_status_check', sql`${table.status} in ('creating','pending','captured','refunded','disputed','needs_review')`),
+  ],
+)
+
+export const memberContributionEvents = pgTable(
+  'member_contribution_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sourceEventId: text('source_event_id').notNull(),
+    checkoutId: uuid('checkout_id').notNull().references(() => memberContributionCheckouts.id, { onDelete: 'restrict' }),
+    eventType: text('event_type').notNull(),
+    payload: jsonb('payload').notNull(),
+    payloadSha256: text('payload_sha256').notNull(),
+    receivedAt: timestamp('received_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('member_contribution_events_source_unique').on(table.sourceEventId)],
+)
+
 export const subscriptions = pgTable(
   'subscriptions',
   {

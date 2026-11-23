@@ -1,0 +1,2 @@
+ALTER TABLE "member_contribution_checkouts" ADD COLUMN "cumulative_refunded_tax_minor" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "member_contribution_checkouts" ADD COLUMN "error_code" text;

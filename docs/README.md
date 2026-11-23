@@ -17,6 +17,8 @@ Implementation and payment setup are described in the
 Portal-linked, one-time card-payment pilot using the separate RaidGuild
 Commerce app while preserving the Participation module's entitlement and
 governance boundaries. The
+[Shopify test member contribution operations](./member-contribution-test-ops.md)
+describes the disabled-by-default card pilot. The non-member pass is deferred. The
 [Entitlement Service API](./entitlement-service-api.md) defines the boundary
 for Portal, Discord, manual operators, and future agents. The
 [Prism Participation Metrics](./prism-participation-metrics.md) runbook defines

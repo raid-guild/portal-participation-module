@@ -3,7 +3,7 @@ export function createOpenApiDocument() {
     openapi: '3.1.0',
     info: {
       title: 'RaidGuild Participation Service API',
-      version: '0.3.0',
+      version: '0.4.0',
       description:
         'Service API for participation entitlements, delivery planning, provisional Prism metric imports, admin-approved metric display, immutable issuance review, and reviewed governance proposal preparation. Metrics cannot change access, billing, membership, or issue shares. No proposal submission or minting is exposed.',
     },
@@ -139,6 +139,13 @@ export function createOpenApiDocument() {
           summary: 'List authenticated participant payment history',
         },
       },
+      '/api/payments/member-contributions': {
+        get: { operationId: 'listOwnTestMemberContributions', summary: 'List own isolated Shopify test contributions', security: [{ sessionCookie: [] }], responses: { '200': { description: 'Test-only checkouts; never live billing or share evidence' }, '401': { description: 'Portal session required' } } },
+        post: { operationId: 'createTestMemberContributionCheckout', summary: 'Authorize one Shopify test checkout for a canonical DAO member', security: [{ sessionCookie: [] }], requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['amountUSD'], properties: { amountUSD: { type: 'integer', enum: [20,40,60,80,100,120,140,160,180,200] } } } } } }, responses: { '201': { description: 'Isolated test checkout' }, '403': { description: 'Current canonical membership required' }, '409': { description: 'Existing monthly checkout or missing wallet' }, '503': { description: 'Pilot disabled or Commerce unavailable' } } },
+      },
+      '/api/v1/billing/member-contributions/events': {
+        post: { operationId: 'ingestVerifiedTestMemberContributionEvent', summary: 'Ingest verified Shopify test evidence only', security: [{ commerceBillingWriteKey: [] }], responses: { '200': { description: 'Stored or duplicate isolated test event' }, '401': { description: 'Invalid service key' }, '409': { description: 'Conflicting economic evidence' }, '503': { description: 'Pilot disabled' } } },
+      },
       '/api/v1/entitlements/{portalUserId}': {
         get: {
           operationId: 'getEntitlementSnapshot',
@@ -228,6 +235,7 @@ export function createOpenApiDocument() {
           bearerFormat: 'metrics-write-key',
           description: 'Dedicated Prism-to-Participation write credential.',
         },
+        commerceBillingWriteKey: { type: 'http', scheme: 'bearer', bearerFormat: 'commerce-billing-write-key', description: 'Dedicated Commerce-to-Participation test billing evidence credential.' },
       },
       schemas: {
         EntitlementSnapshot: {

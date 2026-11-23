@@ -1,8 +1,8 @@
-# Shopify Participation Pass
+# Shopify Member Monthly Contribution
 
 ## Status
 
-Proposed pilot architecture. This document defines how the RaidGuild Commerce
+The non-member participation pass is deferred. This document defines how the RaidGuild Commerce
 app could accept card payments through Shopify without making Shopify or
 Commerce authoritative for Portal identity, DAO membership, entitlements, or
 share issuance.
@@ -13,16 +13,16 @@ cross-rail limits have been proven in production.
 
 ## Product decision
 
-Two offerings may eventually share the same payment infrastructure, but they
+Only the second offering below is in the current test pilot. These offerings
 must remain distinct products with honest descriptions:
 
-1. **Participation pass** — pays for a defined period of participation access
-   or services. It does not confer DAO membership or RG shares.
+1. **Participation pass (deferred)** — would pay for defined participation access
+   or services. It would not confer DAO membership or RG shares.
 2. **Member contribution** — an optional $20–$200 monthly contribution by a
    canonical RaidGuild member. It may appear in the reviewed discounted-share
    report, subject to DAO policy and proposal approval.
 
-The first implementation must not silently re-paywall capabilities that are
+The implementation must not silently re-paywall capabilities that are
 currently free for cohort participants or graduates. RaidGuild must approve the
 participation-pass benefits before that product can affect access.
 
@@ -66,6 +66,12 @@ The browser return URL is display-only. It must never grant access or mark a
 payment confirmed.
 
 ## Pilot purchase flow
+
+The currently implemented `shopify_test` flow is isolated in dedicated
+checkout/event tables in both apps. A Shopify test capture never enters the
+live `payments` or `subscriptions` tables, does not consume a wxDAI monthly
+slot, and cannot enter an issuance snapshot. The live card contribution path
+described below remains design-only pending merchant and governance approval.
 
 1. The buyer enters Participation through the signed Portal handoff.
 2. Participation determines the buyer's canonical Portal identity and current
